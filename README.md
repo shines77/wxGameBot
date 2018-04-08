@@ -42,3 +42,9 @@ $ pip install -U wxpy -i "https://pypi.doubanio.com/simple/"
 # Repository
 
 * [https://github.com/shines77/](https://github.com/shines77/)
+
+[gitter-picture]: https://badges.gitter.im/littlecodersh/ItChat.svg
+[gitter]: https://gitter.im/shines77/wxGameBot?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
+[py27]: https://img.shields.io/badge/python-2.7-ff69b4.svg
+[py35]: https://img.shields.io/badge/python-3.5-red.svg
+[english-version]: https://github.com/shines77/wxGameBot/blob/master/README_EN.md
