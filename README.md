@@ -7,13 +7,13 @@ wxGameBot
 
 ## 依赖库
 
-本程序是采用 `wxpy` （一个优秀的 `wxBot` python 库），而 `wxpy` 又是基于 `itchat` (python) 开发的。
+本程序依赖于 [wxpy](https://github.com/youfou/wxpy) 库（一个可能是最优雅的微信个人号 API / 优秀的微信机器人），同时，[wxpy](https://github.com/youfou/wxpy) 又是基于 [itchat](https://github.com/littlecodersh/ItChat) 开发的。
 
 注：安装 `wxpy` 时会自动安装 `itchat` 库。
 
 ### 安装 wxpy 库
 
-`wxpy` 支持 Python 3.4-3.6，以及 2.7 版本。
+`wxpy` 支持 Python 3.4-3.6，同时也支持 2.7 版本。
 
 将下方命令中的 "pip" 替换为 "pip3" 或 "pip2"，可确保安装到对应的 Python 版本中。
 
