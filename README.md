@@ -1,6 +1,8 @@
 wxGameBot
 -------------
 
+[![Join the chat at https://gitter.im/shines77/wxGameBot](https://badges.gitter.im/shines77/wxGameBot.svg)](https://gitter.im/shines77/wxGameBot?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 [![Gitter][gitter-picture]][gitter] ![py27][py27] ![py35][py35] [English version][english-version]
 
 # 中文 (Chinese)
