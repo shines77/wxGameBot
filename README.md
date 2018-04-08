@@ -1,6 +1,8 @@
 wxGameBot
 -------------
 
+[![Gitter][gitter-picture]][gitter] ![py27][py27] ![py35][py35] [English version][english-version]
+
 # 中文 (Chinese)
 
 `wxGameBot`：一个关于扑克牌猜大小游戏的微信机器人程序，使用 `python` 开发。
@@ -36,3 +38,7 @@ $ pip install -U wxpy -i "https://pypi.doubanio.com/simple/"
 # Credits
 
 * [shines77](https://github.com/shines77/)
+
+# Repository
+
+* [https://github.com/shines77/](https://github.com/shines77/)
