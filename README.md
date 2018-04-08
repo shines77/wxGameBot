@@ -35,13 +35,13 @@ $ pip install -U wxpy -i "https://pypi.doubanio.com/simple/"
 
 `wxGameBot`: A Wechat bot about `PokerGuess` game, developed with `python`.
 
+# Repository
+
+* [https://github.com/shines77/wxGameBot](https://github.com/shines77/wxGameBot)
+
 # Credits
 
 * [shines77](https://github.com/shines77/)
-
-# Repository
-
-* [https://github.com/shines77/](https://github.com/shines77/)
 
 [gitter-picture]: https://badges.gitter.im/littlecodersh/ItChat.svg
 [gitter]: https://gitter.im/shines77/wxGameBot?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
