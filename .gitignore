@@ -103,5 +103,8 @@ ENV/
 # temp files
 stat.json
 
+# WeChat login cache file
+*.pkl
+
 # vscode folder
 /.vscode

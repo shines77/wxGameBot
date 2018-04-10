@@ -7,14 +7,22 @@
 #     一个简单有趣的微信聊天机器人
 #     https://zhujia.info/2017/06/26/MakeAWechatBot/
 #
-import threading, time, json, re
-import sys
-
 # 导入模块
 from wxpy import *
 
-reload(sys)
-sys.setdefaultencoding('utf8')
+import threading, time, json, re
+import chardet
+import sys
+
+PY_VERSION = sys.version
+PY2 = PY_VERSION < '3'
+
+if PY2:
+    reload(sys)
+    sys.setdefaultencoding('utf8')
+else:
+    import importlib
+    importlib.reload(sys)
 
 # re.split(' |\t|\v|\r|\n|\f|~|,|;|:|\?|`|!|@|#|\$|\%|\^|&|\*|\.|\/|\|\'|\"', '123,456,789')
 # re.split(' |`|!|@|#|\$|\%|\^|&|\*|\?|~|,|;|:|/|\.|\'|\"|\t|\v|\r|\n|\f|\|', '123,456,789')
@@ -34,10 +42,10 @@ schedule_time = ""
 stat = {}
 
 # 初始化机器人，扫码登陆
-bot = Bot(cache_path = True, console_qr = 1)
+bot = Bot(cache_path = False, console_qr = 1)
 
 fingerGuessGame = None
-finger_game_time = ""
+finger_game_time = ''
 finger_stop_event = threading.Event()
 
 def str_split(str, seperators):
@@ -45,7 +53,7 @@ def str_split(str, seperators):
     for seperator in seperators:
         tokens = []
         map(lambda t: tokens.extend(t.split(seperator)), result)
-        # print("result is ", result)
+        # print('result is ', result)
         result = tokens
     return result
 
@@ -71,10 +79,10 @@ class FingerGuessGame(threading.Thread):
     def start(self):
         self.reset()
 
-        msg_text = "“剪刀石头布” 游戏创建成功！\n\n参与的玩家是：\n\n"
+        msg_text = '“剪刀石头布” 游戏创建成功！\n\n参与的玩家是：\n\n'
         for player in self.players:
-            msg_text += "　" + player + "\n"
-        msg_text += "\n请以上玩家点击我的头像，私密我回复数字 66，代表开始游戏，注意不是发在当前群里，而是私密我！"
+            msg_text += '　' + player + '\n'
+        msg_text += '\n请以上玩家点击我的头像，私密我回复数字 66，代表开始游戏，注意不是发在当前群里，而是私密我！'
         self.group.send(msg_text)
 
     def terminate(self):
@@ -82,11 +90,11 @@ class FingerGuessGame(threading.Thread):
 
     def stop(self):
         global fingerGuessGame
-        print("[Info] Stopping FingerGuessGame thread, waiting for a while...")
+        print('[Info] Stopping FingerGuessGame thread, waiting for a while...')
         self.stop_event.set()
         if fingerGuessGame != None:
             fingerGuessGame.join()
-            print("[Info] FingerGuessGame thread have stopped.")
+            print('[Info] FingerGuessGame thread have stopped.')
 
     def run(self):
         global finger_game_time
@@ -109,14 +117,14 @@ def stop_finger_guess_game():
 def create_finger_guess_game(group, players):
     global fingerGuessGame
     global bot
-    # print("create_finger_guess_game(): enter ...")
-    group.send('正在创建 "剪刀石头布" 游戏……')
+    # print('create_finger_guess_game(): enter ...')
+    # group.send('正在创建 "剪刀石头布" 游戏……')
     if fingerGuessGame != None:
-        # print("create_finger_guess_game(): fingerGuessGame != None")
-        group.send("警告：\n　　一个群在同一时刻只能创建一个 “剪刀石头布” 游戏，请先结束当前游戏！")
+        # print('create_finger_guess_game(): fingerGuessGame != None')
+        group.send('警告：\n　　一个群在同一时刻只能创建一个 “剪刀石头布” 游戏，请先结束当前游戏！')
     else:
         friends = []
-        # print("create_finger_guess_game(): get friends.")
+        # print('create_finger_guess_game(): get friends.')
         for player in players:
             # print(player)
             friend = bot.friends().search(player)
@@ -127,10 +135,10 @@ def create_finger_guess_game(group, players):
                 if friend in group:
                     friends.append(friend)
                 else:
-                    group.send("错误：\n　　玩家: [" + player + "] 不在当前微信群里，不能正常启动游戏！")
+                    group.send('错误：\n　　玩家: [" + player + "] 不在当前微信群里，不能正常启动游戏！')
                     return
             else:
-                group.send("错误：\n　　玩家: [" + player + "] 还未添加本游戏机器人的微信好友，受邀请的玩家必须先把我加为好友，才能进行游戏！")
+                group.send('错误：\n　　玩家: [" + player + "] 还未添加本游戏机器人的微信好友，受邀请的玩家必须先把我加为好友，才能进行游戏！')
                 return
         if len(friends) == len(players):
             finger_stop_event.clear()
@@ -139,11 +147,11 @@ def create_finger_guess_game(group, players):
                 game.start()
                 fingerGuessGame = game
             else:
-                group.send("“剪刀石头布” 游戏创建失败！")
+                group.send('“剪刀石头布” 游戏创建失败！')
         else:
-            group.send("错误：\n　　还有玩家还未添加本游戏机器人的微信好友！")
+            group.send('错误：\n　　还有玩家还未添加本游戏机器人的微信好友！')
     
-    # print("create_finger_guess_game(): leave ...")
+    # print('create_finger_guess_game(): leave ...')
 
 def tuling_auto_reply(msg):
     return "reply: " + msg
@@ -171,47 +179,47 @@ def handle_group_message(msg):
     group = bot.groups().search(group_name)
     if len(group) > 0:
         if len(group) > 1:
-            print("Error: group_name = [{}]，与该群同名的群不止一个，一共有 {} 个。".format(group_name, len(group)))
+            print('Error: group_name = [{}]，与该群同名的群不止一个，一共有 {} 个。'.format(group_name, len(group)))
         group = ensure_one(group)
     else:
-        print("Error: group_name = [" + group_name + "]，找不到该群。")
+        print('Error: group_name = [' + group_name + ']，找不到该群。')
         return
 
-    if msg.text == "发言排名" or msg.text == "发言排行榜":
+    if msg.text == '发言排名' or msg.text == '发言排行榜':
         if not stat[group.name]:
             return
         msg_text = ""
         index = 1
         count = stat[group.name]['count']
         for name in sorted(count, key=lambda x: count[x], reverse=True):
-            # print("{}: {} {}".format(index, rank['name'], rank['time']))
-            msg_text += "{}: {} 发言了 {} 次\n".format(index, name, count[name])
+            # print('{}: {} {}'.format(index, rank['name'], rank['time']))
+            msg_text += '{}: {} 发言了 {} 次\n'.format(index, name, count[name])
             index += 1
         if msg_text:
-            msg_text = msg.text + "：\n" + msg_text
+            msg_text = msg.text + '：\n' + msg_text
             group.send(msg_text)
-    elif msg.text == "起床排名" or msg.text == "起床排行榜":
+    elif msg.text == '起床排名' or msg.text == '起床排行榜':
         if not stat[group.name]:
             return
         msg_text = ""
         index = 1
         for rank in stat[group.name]['rank']:
-            # print("{}: {} {}".format(index, rank['name'], rank['time']))
-            msg_text += "{}: {} {}\n".format(index, rank['name'], rank['time'])
+            # print('{}: {} {}'.format(index, rank['name'], rank['time']))
+            msg_text += '{}: {} {}\n'.format(index, rank['name'], rank['time'])
             index += 1
         if msg_text:
-            msg_text = msg.text + "：\n" + msg_text
+            msg_text = msg.text + '：\n' + msg_text
             group.send(msg_text)
     else:
-        # print("msg_delimiter = " + msg_delimiter)
+        # print('msg_delimiter = " + msg_delimiter)
         tokens = re.split(msg_delimiter, msg.text)
         tokens = [t for t in tokens if t]
         # print(tokens)
 
         if len(tokens) >= 1:
-            if tokens[0] == "猜拳":
+            if tokens[0] == '猜拳':
                 # 猜拳游戏
-                if len(tokens) >= 2 and tokens[1] == "邀请":
+                if len(tokens) >= 2 and tokens[1] == '邀请':
                     # 邀请玩家, 格式: @玩家1, @玩家2, @玩家3, @我f
                     tmp_players = msg.text.split('@')
                     # print(tmp_players)
@@ -242,10 +250,10 @@ def handle_friend_message(msg):
     global msg_delimiter
 
     name = msg.chat.name
-    # print("name = " + name)
-    # print("msg.text = " + msg.text)
+    # print('name = ' + name)
+    # print('msg.text = ' + msg.text)
 
-    # print("msg_delimiter = " + msg_delimiter)
+    # print('msg_delimiter = ' + msg_delimiter)
     tokens = re.split(msg_delimiter, msg.text)
     tokens = [t for t in tokens if t]
     print(tokens)
@@ -258,11 +266,11 @@ def auto_reply_friend(msg):
     print(msg)
     """
     if isinstance(msg.chat, Group):
-        print("group = " + msg.chat.name)
-        print("name = " + msg.member.name)
+        print('group = ' + msg.chat.name)
+        print('name = ' + msg.member.name)
     elif isinstance(msg.chat, Friend):
-        print("name = " + msg.chat.name)
-    print("msg.text = " + msg.text)
+        print('name = ' + msg.chat.name)
+    print('msg.text = ' + msg.text)
     """
 
     if isinstance(msg.chat, Group):
@@ -304,10 +312,10 @@ def stopBot():
 def stopThread():
     global stopEvent
     global scheduleThread
-    print("[Info] Stopping ScheduleThread, waiting for {} seconds...".format(wait_time_sec))
+    print('[Info] Stopping ScheduleThread, waiting for {} seconds...'.format(wait_time_sec))
     stopEvent.set()
     scheduleThread.join()
-    print("[Info] ScheduleThread have stopped.")
+    print('[Info] ScheduleThread have stopped.')
 
 class ScheduleThread(threading.Thread):
     """
@@ -329,11 +337,11 @@ class ScheduleThread(threading.Thread):
         loop = 0
         while not self.stopEvent.isSet():
             time.sleep(wait_time_sec)
-            cur_time = time.strftime("%H:%M", time.localtime())
+            cur_time = time.strftime('%H:%M', time.localtime())
             loop += 1
             if loop >= (300 / wait_time_sec):
                 loop = 0
-                print("[Info] cur_time: {}, schedule_time: {}".format(cur_time, schedule_time))
+                print('[Info] cur_time: {}, schedule_time: {}'.format(cur_time, schedule_time))
             if cur_time == schedule_time:
                 continue
             elif cur_time == '09:00':
@@ -341,29 +349,29 @@ class ScheduleThread(threading.Thread):
                     print(group.name)
                     if not stat[group.name]:
                         continue
-                    msg_text = ""
+                    msg_text = ''
                     index = 1
                     for rank in stat[group.name]['rank']:
-                        # print("{}: {} {}".format(index, rank['name'], rank['time']))
-                        msg_text += "{}：{} {}\n".format(index, rank['name'], rank['time'])
+                        # print('{}: {} {}'.format(index, rank['name'], rank['time']))
+                        msg_text += '{}：{} {}\n'.format(index, rank['name'], rank['time'])
                         index += 1
                     if msg_text:
-                        msg_text = "排行日报\n起床排行榜：\n" + msg_text
+                        msg_text = '排行日报\n起床排行榜：\n' + msg_text
                         group.send(msg_text)
             elif cur_time == '23:00':
                 for group in bot.groups():
                     print(group.name)
                     if not stat[group.name]:
                         continue
-                    msg_text = ""
+                    msg_text = ''
                     index = 1
                     count = stat[group.name]['count']
                     for name in sorted(count, key=lambda x: count[x], reverse=True):
-                        # print("{}: {} {}".format(index, rank['name'], rank['time']))
-                        msg_text += "{}：{} 发言了 {} 次\n".format(index, name, count[name])
+                        # print('{}: {} {}'.format(index, rank['name'], rank['time']))
+                        msg_text += '{}：{} 发言了 {} 次\n'.format(index, name, count[name])
                         index += 1
                     if msg_text:
-                        msg_text = "排行日报\n发言排行榜：\n" + msg_text
+                        msg_text = '排行日报\n发言排行榜：\n' + msg_text
                         group.send(msg_text)
             elif cur_time == '00:00':
                 stat = dict()
@@ -371,8 +379,8 @@ class ScheduleThread(threading.Thread):
                     fh.write('')
             schedule_time = cur_time
 
-if __name__ == "__main__":
-    # print("__main__ = " + __name__)
+if __name__ == '__main__':
+    # print('__main__ = ' + __name__)
 
     stopEvent = threading.Event()
     scheduleThread = ScheduleThread("scheduler", stopEvent)
