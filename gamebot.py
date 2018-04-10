@@ -243,20 +243,25 @@ class FingerGuessGame(threading.Thread):
 
     def play(self, name, finger):
         global console
-        console.info('play(): name = {}, finger = {}'.format(name, finger))
-        if self.is_playing():
-            if self.is_valid_player(name):
-                # console.info('[Info]: is a valid player.')
-                self.results[name] = finger
-                if len(self.results) == self.total_players:
-                    self.judge()
-                    self.results.clear()
-                    self.stage += 1
-            # else:
-                # console.info('[Error]: is a invalid player.')
-        else:
-            self.send_group_msg('错误：\n游戏没有开始！')
-    
+        console.trace('play(): enter.')
+        try:
+            console.info('play(): name = {}, finger = {}'.format(name, finger))
+            if self.is_playing():
+                if self.is_valid_player(name):
+                    # console.trace('[Info]: is a valid player.')
+                    self.results[name] = finger
+                    if len(self.results) == self.total_players:
+                        self.judge()
+                        self.results.clear()
+                        self.stage += 1
+                # else:
+                    # console.trace('[Error]: is a invalid player.')
+            else:
+                self.send_group_msg('错误：\n游戏没有开始！')
+        except Exception as err:
+            display_exception(err)
+        console.trace('play(): leave.')
+
     def judge(self):
         # 判断输赢
         global console
@@ -358,7 +363,7 @@ def create_finger_guess_game(group, players):
             send_group_msg(group, '警告：\n　　一个群在同一时刻只能创建一个游戏，请先结束当前游戏！')
         return
     # console.trace('create_finger_guess_game(): enter ...')
-    send_group_msg(group, '正在创建 "剪刀石头布" 游戏……')
+    # send_group_msg(group, '正在创建 "剪刀石头布" 游戏……')
     if fingerGuessGame != None:
         # console.trace('create_finger_guess_game(): fingerGuessGame != None')
         send_group_msg(group, '警告：\n　　一个群在同一时刻只能创建一个 “剪刀石头布” 游戏，请先结束当前游戏！')
