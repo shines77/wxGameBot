@@ -150,13 +150,13 @@ def str_length(str):
 
 def display_exception(err):
     global console
-    console.info('===================================================================')
-    # console.info('str(Exception):        ', str(Exception))
-    console.info('str(err):              ', str(err))
-    console.info('repr(err):             ', repr(err))
-    console.info('traceback.print_exc(): ', traceback.print_exc())
-    console.info('traceback.format_exc():\n%s' % traceback.format_exc())
-    console.info('===================================================================')
+    console.warn('=============================================================')
+    # console.warn('str(Exception):        ', str(Exception))
+    console.warn('str(err):              ', str(err))
+    console.warn('repr(err):             ', repr(err))
+    console.warn('traceback.print_exc(): ', traceback.print_exc())
+    console.warn('traceback.format_exc():\n%s' % traceback.format_exc())
+    console.warn('=============================================================')
 
 def send_group_msg(group, msg_text):
     global console
@@ -170,6 +170,48 @@ class FingerType(Enum):
     Rock = 0
     Scissors = 1
     Paper = 2
+
+@unique
+class WinnerType(Enum):
+    Unknown = -1
+    Rock = 0
+    Scissors = 1
+    Paper = 2
+    Deuce1 = 3
+    Deuce3 = 4
+    Error0 = 5
+    Error2 = 6
+    Error = 7
+
+def get_finger_emote(finger_type):
+    if finger_type == FingerType.Rock:
+        return '[拳头]'
+    elif finger_type == FingerType.Scissors:
+        return '[胜利]'
+    elif finger_type == FingerType.Paper:
+        return '[OK]'
+    else:
+        return '[疑问]'
+
+def get_finger_short_name(finger_type):
+    if finger_type == FingerType.Rock:
+        return '石头'
+    elif finger_type == FingerType.Scissors:
+        return '剪刀'
+    elif finger_type == FingerType.Paper:
+        return '布'
+    else:
+        return '未知'
+
+def get_finger_name(finger_type):
+    if finger_type == FingerType.Rock:
+        return '[拳头] (石头)'
+    elif finger_type == FingerType.Scissors:
+        return '[胜利] (剪刀)'
+    elif finger_type == FingerType.Paper:
+        return '[OK] (布)'
+    else:
+        return '[疑问] (未知)'
 
 class FingerGuessGame(threading.Thread):
     def __init__(self, group, friends, players, stop_event = None):
@@ -187,6 +229,7 @@ class FingerGuessGame(threading.Thread):
         self.playing = False
         self.running = False
         self.stage = 0
+        self.max_stage = 10
         self.results = {}
         self.scores = {}
 
@@ -202,11 +245,98 @@ class FingerGuessGame(threading.Thread):
                 return True
         return False
 
+    def make_player_msg(self, player_name, winner_type):
+        global console
+        try:
+            msg_out = '第 {} 局：\n\n'.format(self.stage + 1)
+            for player in self.players:
+                if self.results.get(player):
+                    msg_out += '[' + player + ']: ' + get_finger_name(self.results[player])
+                    if winner_type.value == self.results[player].vaule:
+                        msg_out += '  [呲牙]'
+                else:
+                    msg_out += '[' + player + ']: 弃权'
+                msg_out += '\n'
+
+            msg_text = ''
+            if winner_type.value == self.results[player].vaule:
+                msg_text = '恭喜，你赢了！'
+            else:
+                if winner_type == WinnerType.Deuce1:
+                    msg_text = '出拳一样，平局！'
+                elif winner_type == WinnerType.Deuce3:
+                    msg_text = '没有人输也没有人赢，平局！'
+                elif (winner_type == WinnerType.Error) \
+                    or (winner_type == WinnerType.Error0) \
+                    or (winner_type == WinnerType.Error2):
+                    msg_text = '未知错误！(Code：' + str(winner_type.value) + ')'
+                elif winner_type == WinnerType.Unknown:
+                    msg_text = '未知错误 [Unknown]！'
+        except Exception as err:
+            display_exception(err)
+        return (msg_out + '\n' + msg_text)
+
+    def make_group_msg(self, winner_type, msg_text):
+        global console
+        try:
+            winner_list = ''
+            msg_out = '第 {} 局：\n\n'.format(self.stage + 1)
+            for player in self.players:
+                if self.results.get(player):
+                    msg_out += '[' + player + ']: ' + get_finger_name(self.results[player])
+                    if winner_type.value == self.results[player].vaule:
+                        msg_out += '  [呲牙]'
+                        winner_list += '[' + player + '], '
+                else:
+                    msg_out += '[' + player + ']: 弃权'
+                msg_out += '\n'
+
+            msg_text = ''
+            if winner_type.value == self.results[player].vaule:
+                # if len(winner_list) >= 2:
+                #     winner_list = winner_list[0, len(winner_list) - 2]
+                msg_text = '恭喜，' + winner_list + ' 获胜！'
+            else:
+                if winner_type == WinnerType.Deuce1:
+                    msg_text = '所有人出拳一样，平局！'
+                elif winner_type == WinnerType.Deuce3:
+                    msg_text = '没有人输也没有人赢，平局！'
+                elif (winner_type == WinnerType.Error) \
+                    or (winner_type == WinnerType.Error0) \
+                    or (winner_type == WinnerType.Error2):
+                    msg_text = '未知错误！(Code：' + str(winner_type.value) + ')'
+                elif winner_type == WinnerType.Unknown:
+                    msg_text = '未知错误 [Unknown]！'
+        except Exception as err:
+            display_exception(err)
+        return (msg_out + '\n' + msg_text)
+
     def send_group_msg(self, msg_text):
         global console
-        self.group.send(msg_text)
-        msg_text = msg_text.replace('\n', '')
-        console.info(msg_text)
+        try:
+            self.group.send(msg_text)
+            msg_text = msg_text.replace('\n', '')
+            console.info(msg_text)
+        except Exception as err:
+            display_exception(err)
+
+    def send_msg(self, winner_type, msg_text):
+        global console
+        console.trace("send_msg(): enter.")
+        try:
+            for friend in self.friends:
+                player_name = friend.name
+                console.trace("send_msg(): player_name = " + player_name)
+                player_msg = self.make_player_msg(player_name, winner_type)
+                friend.send(player_msg)
+            group_msg = self.make_group_msg(winner_type, msg_text)
+            if self.group != None:
+                self.group.send(group_msg)
+            # group_msg = group_msg.replace('\n', '')
+            console.info(group_msg)
+        except Exception as err:
+            display_exception(err)
+        console.trace("send_msg(): leave.")
 
     def start(self):
         global console
@@ -279,19 +409,24 @@ class FingerGuessGame(threading.Thread):
                 finger_info[finger].append(name)
             console.info(finger_info)
 
+            winner_type = WinnerType.Unknown
+
             if len(finger_info) == 3:
-                self.send_group_msg('没有人输也没有人赢，平局！')
+                winner_type = WinnerType.Deuce3
+                self.send_msg(winner_type, '没有人输也没有人赢，平局！')
             elif len(finger_info) == 1:
+                winner_type = WinnerType.Deuce1
                 if finger_info.get(FingerType.Rock):
-                    self.send_group_msg('大家出的都是 [拳头] (石头)，平局！')
+                    self.send_msg(winner_type, '大家出的都是 [拳头] (石头)，平局！')
                 elif finger_info.get(FingerType.Scissors):
-                    self.send_group_msg('大家出的都是 [胜利] (剪刀)，平局！')
+                    self.send_msg(winner_type, '大家出的都是 [胜利] (剪刀)，平局！')
                 elif finger_info.get(FingerType.Paper):
-                    self.send_group_msg('大家出的都是 [OK] (布)，平局！')
+                    self.send_msg(winner_type, '大家出的都是 [OK] (布)，平局！')
                 else:
-                    self.send_group_msg('大家出的都是一样的拳，且是未知类型，平局！')
+                    self.send_msg(winner_type, '大家出的都是一样的拳，且是未知类型，平局！')
             elif len(finger_info) == 0:
-                self.send_group_msg('错误：\n抱歉，没有人出拳！')
+                winner_type = WinnerType.Error0
+                self.send_msg(winner_type, '错误：\n抱歉，没有人出拳！')
             elif len(finger_info) == 2:
                 """
                 fingers = []
@@ -300,34 +435,46 @@ class FingerGuessGame(threading.Thread):
                 console.info(fingers)
                 if (fingers[0] == FingerType.Rock and fingers[1] == FingerType.Scissors) \
                     or (fingers[0] == FingerType.Scissors and fingers[1] == FingerType.Rock):
-                    self.send_group_msg('出 [拳头] (石头) 的玩家获胜！')
+                    winner_type = WinnerType.Rock
+                    self.send_msg(winner_type, '出 [拳头] (石头) 的玩家获胜！')
                 elif (fingers[0] == FingerType.Rock and fingers[1] == FingerType.Paper) \
                     or (fingers[0] == FingerType.Paper and fingers[1] == FingerType.Rock):
-                    self.send_group_msg('出 [OK] (布) 的玩家获胜！')
+                    winner_type = WinnerType.Paper
+                    self.send_msg(winner_type, '出 [OK] (布) 的玩家获胜！')
                 elif (fingers[0] == FingerType.Scissors and fingers[1] == FingerType.Paper) \
                     or (fingers[0] == FingerType.Paper and fingers[1] == FingerType.Scissors):
-                    self.send_group_msg('出 [胜利] (剪刀) 的玩家获胜！')
+                    winner_type = WinnerType.Scissors
+                    self.send_msg(winner_type, '出 [胜利] (剪刀) 的玩家获胜！')
                 else:
-                    self.send_group_msg('错误：\n未知错误！')
+                    winner_type = WinnerType.Error2
+                    self.send_msg(winner_type, '错误：\n未知错误！')
                 """
                 if finger_info.get(FingerType.Rock):
                     if finger_info.get(FingerType.Scissors):
-                        self.send_group_msg('出 [拳头] (石头) 的玩家获胜！')
+                        winner_type = WinnerType.Rock
+                        self.send_msg(winner_type, '出 [拳头] (石头) 的玩家获胜！')
                     elif finger_info.get(FingerType.Paper):
-                        self.send_group_msg('出 [OK] (布) 的玩家获胜！')
+                        winner_type = WinnerType.Paper
+                        self.send_msg(winner_type, '出 [OK] (布) 的玩家获胜！')
                 elif finger_info.get(FingerType.Scissors):
                     if finger_info.get(FingerType.Paper):
-                        self.send_group_msg('出 [胜利] (剪刀) 的玩家获胜！')
+                        winner_type = WinnerType.Scissors
+                        self.send_msg(winner_type, '出 [胜利] (剪刀) 的玩家获胜！')
                     else:
-                        self.send_group_msg('错误：\n只有出 [胜利] (剪刀) 的玩家，且存在未知类型的出拳！')
+                        winner_type = WinnerType.Scissors
+                        self.send_msg(winner_type, '错误：\n只有出 [胜利] (剪刀) 的玩家，且存在未知类型的出拳！')
                 elif finger_info.get(FingerType.Paper):
-                    self.send_group_msg('错误：\n只有出 [OK] (布) 的玩家，且存在未知类型的出拳！')
+                    winner_type = WinnerType.Paper
+                    self.send_msg(winner_type, '错误：\n只有出 [OK] (布) 的玩家，且存在未知类型的出拳！')
                 else:
-                    self.send_group_msg('错误：\n未知错误！')
+                    winner_type = WinnerType.Error2
+                    self.send_msg(winner_type, '错误：\n未知错误！')
             else:
-                self.send_group_msg('错误：\n出拳类型超过 3 种！')
+                winner_type = WinnerType.Error
+                self.send_msg(winner_type, '错误：\n出拳类型超过 3 种！')
         except Exception as err:
             display_exception(err)
+
         console.trace('judge(): leave.')
 
     def run(self):
@@ -359,7 +506,8 @@ def create_finger_guess_game(group, players):
     global current_game
     global fingerGuessGame
     global bot
-    # console.trace('create_finger_guess_game(): enter.')
+    console.trace('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
+    console.trace('create_finger_guess_game(): enter.')
     try:
         if current_game != 0:
             if current_game == 1:
@@ -403,7 +551,8 @@ def create_finger_guess_game(group, players):
     except Exception as err:
         display_exception(err)
 
-    # console.trace('create_finger_guess_game(): leave.')
+    console.trace('create_finger_guess_game(): leave.')
+    console.trace('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
 
 def tuling_auto_reply(msg):
     return "reply: " + msg
@@ -528,6 +677,7 @@ def play_finger_guess_game(name, action):
     console.info('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
 
 def handle_friend_message(msg):
+    global console
     global msg_delimiter
     global current_game
     global fingerGuessGame
@@ -607,6 +757,7 @@ def auto_accept_friends(msg):
     new_friend.send('哈哈，我自动接受了你的好友请求。[我是机器人]')
 
 def stop():
+    global console
     global bot
     try:
         bot.logout()
@@ -694,7 +845,7 @@ class ScheduleThread(threading.Thread):
 if __name__ == '__main__':
     # print('__main__ = ' + __name__)
 
-    console = Console(LogType.WARNING)
+    console = Console(LogType.ALL)
 
     stopEvent = threading.Event()
     scheduleThread = ScheduleThread("scheduler", stopEvent)
