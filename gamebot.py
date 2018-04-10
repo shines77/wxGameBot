@@ -62,12 +62,14 @@ class FingerGuessGame():
 def create_finger_guess_game(group, players):
     global fingerGuessGame
     global bot
+    # print("create_finger_guess_game(): enter ...")
+    group.send('正在创建 "剪刀石头布" 游戏中……')
     if fingerGuessGame != None:
-        print("create_finger_guess_game(): fingerGuessGame != None")
+        # print("create_finger_guess_game(): fingerGuessGame != None")
         group.send("警告：\n　　一个群在同一时刻只能创建一个 “剪刀石头布” 游戏，请先结束当前游戏！")
     else:
         friends = []
-        print("create_finger_guess_game()")
+        # print("create_finger_guess_game(): get friends.")
         for player in players:
             # print(player)
             friend = bot.friends().search(player)
@@ -90,18 +92,16 @@ def create_finger_guess_game(group, players):
                 fingerGuessGame = game
 
                 msg_text = "恭喜，“剪刀石头布” 游戏创建成功！\n\n参与的玩家是：\n\n"
-                i = 0
                 for player in players:
-                    i += 1
-                    if i < len(players):
-                        msg_text += "　　" + player + "\n"
-                    else:
-                        msg_text += "　　" + player
+                    msg_text += "　" + player + "\n"
+                msg_text += "\n请以上玩家点击我的头像，私密我回复数字 66，代表开始游戏，注意不是发在当前群里，是私密我！"
                 group.send(msg_text)
             else:
                 group.send("“剪刀石头布” 游戏创建失败！")
         else:
             group.send("错误：\n　　还有玩家还未添加本游戏机器人的微信好友！")
+    
+    # print("create_finger_guess_game(): leave ...")
 
 def tuling_auto_reply(msg):
     return "reply: " + msg
@@ -164,7 +164,7 @@ def handle_group_message(msg):
         # print("msg_delimiter = " + msg_delimiter)
         tokens = re.split(msg_delimiter, msg.text)
         tokens = [t for t in tokens if t]
-        print(tokens)
+        # print(tokens)
 
         if len(tokens) >= 1:
             if tokens[0] == "猜拳":
@@ -172,7 +172,7 @@ def handle_group_message(msg):
                 if len(tokens) >= 2 and tokens[1] == "邀请":
                     # 邀请玩家, 格式: @玩家1, @玩家2, @玩家3, @我f
                     tmp_players = msg.text.split('@')
-                    print(tmp_players)
+                    # print(tmp_players)
                     players = []
                     if len(tmp_players) >= 2:
                         tmp_players.pop(0)
@@ -189,7 +189,6 @@ def handle_group_message(msg):
                     if len(players) > 4:
                         group.send('抱歉，"剪刀石头布" 游戏仅支持2至4名玩家，人太多了玩不转！请重新邀请玩家。')
                     if len(players) >= 2:
-                        group.send('正在创建 "剪刀石头布" 游戏中……')
                         create_finger_guess_game(group, players)
                     else:
                         group.send('抱歉，"剪刀石头布" 游戏必须两人或两人以上才行进行！请重新邀请玩家。')
