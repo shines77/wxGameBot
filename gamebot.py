@@ -8,9 +8,13 @@
 #     https://zhujia.info/2017/06/26/MakeAWechatBot/
 #
 import threading, time, json, re
+import sys
 
 # 导入模块
 from wxpy import *
+
+reload(sys)
+sys.setdefaultencoding('utf8')
 
 # re.split(' |\t|\v|\r|\n|\f|~|,|;|:|\?|`|!|@|#|\$|\%|\^|&|\*|\.|\/|\|\'|\"', '123,456,789')
 # re.split(' |`|!|@|#|\$|\%|\^|&|\*|\?|~|,|;|:|/|\.|\'|\"|\t|\v|\r|\n|\f|\|', '123,456,789')
