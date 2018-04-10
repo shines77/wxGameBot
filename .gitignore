@@ -102,3 +102,6 @@ ENV/
 
 # temp files
 stat.json
+
+# vscode folder
+/.vscode

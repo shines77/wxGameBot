@@ -1,8 +1,8 @@
 #
 # Reference:
 #
-# 一个简单有趣的微信聊天机器人
-# https://zhujia.info/2017/06/26/MakeAWechatBot/
+#     一个简单有趣的微信聊天机器人
+#     https://zhujia.info/2017/06/26/MakeAWechatBot/
 #
 import threading, time, json, re
 
@@ -29,63 +29,173 @@ stat = {}
 # 初始化机器人，扫码登陆
 bot = Bot()
 
+fingerGuessGame = None
+
+def str_split(str, seperators):
+    result = [str]
+    for seperator in seperators:
+        tokens = []
+        map(lambda t: tokens.extend(t.split(seperator)), result)
+        print("result is ", result)
+        result = tokens
+    return result
+
+def str_length(str):
+    length = len(str)
+    utf8_length = len(str.encode('utf-8'))
+    length = (utf8_length - length)/2 + length
+    return length
+
+class FingerGuessGame():
+    def __init__(self, group, friends, players):
+        self.group = group
+        self.friends = friends
+        self.players = players
+
+    def reset(self):
+        self.stage = 0
+        self.score = []
+
+    def start(self):
+        self.reset()
+
+def create_finger_guess_game(group, players):
+    global fingerGuessGame
+    global bot
+    if fingerGuessGame != None:
+        print("create_finger_guess_game(): fingerGuessGame != None")
+        group.send("警告：\n　　一个群在同一时刻只能创建一个 “剪刀石头布” 游戏，请先结束当前游戏！")
+    else:
+        friends = []
+        print("create_finger_guess_game()")
+        for player in players:
+            # print(player)
+            friend = bot.friends().search(player)
+            # print(len(friend))
+            # print(friend)
+            if len(friend) > 0:
+                friend = ensure_one(friend)
+                if friend in group:
+                    friends.append(friend)
+                else:
+                    group.send("错误：\n　　玩家: [" + player + "] 不在当前微信群里，不能正常启动游戏！")
+                    return
+            else:
+                group.send("错误：\n　　玩家: [" + player + "] 还未添加本游戏机器人的微信好友，受邀请的玩家必须先把我加为好友，才能进行游戏！")
+                return
+        if len(friends) == len(players):
+            game = FingerGuessGame(group, friends, players)
+            if game != None:
+                game.start()
+                fingerGuessGame = game
+
+                msg_text = "恭喜，“剪刀石头布” 游戏创建成功！\n\n参与的玩家是：\n\n"
+                i = 0
+                for player in players:
+                    i += 1
+                    if i < len(players):
+                        msg_text += "　　" + player + "\n"
+                    else:
+                        msg_text += "　　" + player
+                group.send(msg_text)
+            else:
+                group.send("“剪刀石头布” 游戏创建失败！")
+        else:
+            group.send("错误：\n　　还有玩家还未添加本游戏机器人的微信好友！")
+
 def tuling_auto_reply(msg):
     return "reply: " + msg
 
 def handle_group_message(msg):
     global msg_delimiter
-    group = msg.chat.name
-    name = msg.member.name
+    group_name = msg.chat.name
+    member_name = msg.member.name
 
-    if group in stat:
-        if name in stat[group]['count']:
-            stat[group]['count'][name] += 1
+    if group_name in stat:
+        if member_name in stat[group_name]['count']:
+            stat[group_name]['count'][member_name] += 1
         else:
-            stat[group]['count'][name] = 1
+            stat[group_name]['count'][member_name] = 1
         flag = True
-        for rank in stat[group]['rank']:
-            if name == rank['name']:
+        for rank in stat[group_name]['rank']:
+            if member_name == rank['name']:
                 flag = False
                 break
         if flag:
-            stat[group]['rank'].append({'name': name, 'time': time.strftime("%H:%M:%S", time.localtime())})
+            stat[group_name]['rank'].append({'name': member_name, 'time': time.strftime("%H:%M:%S", time.localtime())})
     else:
-        stat[group] = {"count": {name: 1}, 'rank': [{'name': name, 'time': time.strftime("%H:%M:%S", time.localtime())}, ]}
+        stat[group_name] = {"count": {member_name: 1}, 'rank': [{'name': member_name, 'time': time.strftime("%H:%M:%S", time.localtime())}, ]}
 
-    if msg.text == "发言排行榜":
-        g = bot.groups().search(group)[0]
-        # g = ensure_one(gs)
-        if not stat[g.name]:
+    group = bot.groups().search(group_name)
+    if len(group) > 0:
+        if len(group) > 1:
+            print("Error: group_name = [{}]，与该群同名的群不止一个，一共有 {} 个。".format(group_name, len(group)))
+        group = ensure_one(group)
+    else:
+        print("Error: group_name = [" + group_name + "]，找不到该群。")
+        return
+
+    if msg.text == "发言排名" or msg.text == "发言排行榜":
+        if not stat[group.name]:
             return
         msg_text = ""
         index = 1
-        count = stat[g.name]['count']
+        count = stat[group.name]['count']
         for name in sorted(count, key=lambda x: count[x], reverse=True):
             # print("{}: {} {}".format(index, rank['name'], rank['time']))
             msg_text += "{}: {} 发言了 {} 次\n".format(index, name, count[name])
             index += 1
         if msg_text:
-            msg_text = "发言排行榜：\n" + msg_text
-            g.send(msg_text)
-    elif msg.text == "起床排行榜":
-        g = bot.groups().search(group)[0]
-        # g = ensure_one(gs)
-        if not stat[g.name]:
+            msg_text = msg.text + "：\n" + msg_text
+            group.send(msg_text)
+    elif msg.text == "起床排名" or msg.text == "起床排行榜":
+        if not stat[group.name]:
             return
         msg_text = ""
         index = 1
-        for rank in stat[g.name]['rank']:
+        for rank in stat[group.name]['rank']:
             # print("{}: {} {}".format(index, rank['name'], rank['time']))
             msg_text += "{}: {} {}\n".format(index, rank['name'], rank['time'])
             index += 1
         if msg_text:
-            msg_text = "起床排行榜：\n" + msg_text
-            g.send(msg_text)
+            msg_text = msg.text + "：\n" + msg_text
+            group.send(msg_text)
     else:
-        print("msg_delimiter = " + msg_delimiter)
-        msg_tokens = re.split(msg_delimiter, msg.text)
-        msg_tokens = [s for s in msg_tokens if s]
-        print(msg_tokens)
+        # print("msg_delimiter = " + msg_delimiter)
+        tokens = re.split(msg_delimiter, msg.text)
+        tokens = [t for t in tokens if t]
+        print(tokens)
+
+        if len(tokens) >= 1:
+            if tokens[0] == "猜拳":
+                # 猜拳游戏
+                if len(tokens) >= 2 and tokens[1] == "邀请":
+                    # 邀请玩家, 格式: @玩家1, @玩家2, @玩家3, @我f
+                    tmp_players = msg.text.split('@')
+                    print(tmp_players)
+                    players = []
+                    if len(tmp_players) >= 2:
+                        tmp_players.pop(0)
+                        for player in tmp_players:
+                            # print(player)
+                            player = player.strip()
+                            player = player.strip('\u2005')
+                            player = player.strip('　')
+                            if player == '我':
+                                players.append(member_name)
+                            else:
+                                players.append(player)
+                    print(players)
+                    if len(players) > 4:
+                        group.send('抱歉，"剪刀石头布" 游戏仅支持2至4名玩家，人太多了玩不转！请重新邀请玩家。')
+                    if len(players) >= 2:
+                        group.send('正在创建 "剪刀石头布" 游戏中……')
+                        create_finger_guess_game(group, players)
+                    else:
+                        group.send('抱歉，"剪刀石头布" 游戏必须两人或两人以上才行进行！请重新邀请玩家。')
+
+        elif len(msg.text) != 0:
+            print(msg.text)
 
 def handle_friend_message(msg):
     global msg_delimiter
@@ -94,10 +204,10 @@ def handle_friend_message(msg):
     # print("name = " + name)
     # print("msg.text = " + msg.text)
 
-    print("msg_delimiter = " + msg_delimiter)
-    msg_tokens = re.split(msg_delimiter, msg.text)
-    msg_tokens = [s for s in msg_tokens if s]
-    print(msg_tokens)
+    # print("msg_delimiter = " + msg_delimiter)
+    tokens = re.split(msg_delimiter, msg.text)
+    tokens = [t for t in tokens if t]
+    print(tokens)
 
 @bot.register([Friend, Group])
 def auto_reply_friend(msg):
@@ -245,4 +355,5 @@ if __name__ == "__main__":
 ❤ ♥
 """
 
+# bot.join()
 embed()
