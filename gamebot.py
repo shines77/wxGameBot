@@ -9,10 +9,12 @@
 #
 # 导入模块
 from wxpy import *
+from enum import unique, Enum, IntEnum
 
 import threading, time, json, re
 import chardet
 import sys
+import traceback
 
 PY_VERSION = sys.version
 PY2 = PY_VERSION < '3'
@@ -44,6 +46,10 @@ stat = {}
 # 初始化机器人，扫码登陆
 bot = Bot(cache_path = False, console_qr = 1)
 
+# 0: None, 1: FingerGuessGame, 2: PokerGuessGame
+current_game = 0
+
+# FingerGuessGame
 fingerGuessGame = None
 finger_game_time = ''
 finger_stop_event = threading.Event()
@@ -63,44 +69,133 @@ def str_length(str):
     length = (utf8_length - length) / 2 + length
     return length
 
+def display_exception(err):
+    print('===================================================================')
+    # print('str(Exception):        ', str(Exception))
+    print('str(err):              ', str(err))
+    print('repr(err):             ', repr(err))
+    print('traceback.print_exc(): ', traceback.print_exc())
+    print('traceback.format_exc():\n%s' % traceback.format_exc())
+    print('===================================================================')
+
+@unique
+class FingerType(Enum):
+    Rock = 0
+    Scissors = 1
+    Paper = 2
+
 class FingerGuessGame(threading.Thread):
     def __init__(self, group, friends, players, stop_event = None):
         super(FingerGuessGame, self).__init__()
         self.group = group
         self.friends = friends
         self.players = players
+        self.total_players = len(players)
         self.stop_event = stop_event
+
         self.heart_time = 1
-
-    def reset(self):
-        self.stage = 0
-        self.score = []
-
-    def start(self):
         self.reset()
 
-        msg_text = '“剪刀石头布” 游戏创建成功！\n\n参与的玩家是：\n\n'
+    def reset(self):
+        self.playing = False
+        self.running = False
+        self.stage = 0
+        self.results = {}
+        self.scores = {}
+
+    def is_playing(self):
+        return self.playing        
+
+    def is_running(self):
+        return self.running
+
+    def is_valid_player(self, name):
         for player in self.players:
-            msg_text += '　' + player + '\n'
-        msg_text += '\n请以上玩家点击我的头像，私密我回复数字 66，代表开始游戏，注意不是发在当前群里，而是私密我！'
-        self.group.send(msg_text)
+            if name == player:
+                return True
+        return False
+
+    def start(self):
+        try:
+            if not (self.is_playing()):
+                self.reset()
+                self.playing = True
+
+                msg_text = '“剪刀石头布” 游戏创建成功！\n\n参与的玩家是：\n\n'
+                for player in self.players:
+                    msg_text += '　' + player + '\n'
+                msg_text += '\n请以上玩家点击我的头像，私密我回复数字 66，表示确认。注意：不是发在当前群里，而是私密我！！'
+                self.group.send(msg_text)
+            else:
+                self.group.send('错误：\n游戏已经在进行中！')
+        except Exception as err:
+            display_exception(err)
 
     def terminate(self):
         self.stop()
 
     def stop(self):
         global fingerGuessGame
-        print('[Info] Stopping FingerGuessGame thread, waiting for a while...')
-        self.stop_event.set()
-        if fingerGuessGame != None:
-            fingerGuessGame.join()
-            print('[Info] FingerGuessGame thread have stopped.')
+        if self.is_playing():
+            print('[Info] Stopping FingerGuessGame thread, waiting for...')
+            self.stop_event.set()
+            if fingerGuessGame != None:
+                if self.is_running():
+                    fingerGuessGame.join()
+                print('[Info] FingerGuessGame thread have stopped.')
+                self.running = False
+            self.playing = False
+
+    def play(self, name, finger):
+        print('play(): name = {}, finger = {}'.format(name, finger))
+        if self.is_playing():
+            if self.is_valid_player(name):
+                print('[Info]: is a valid player.')
+                self.results[name] = finger
+                if len(self.results) == self.total_players:
+                    self.judge()
+                    self.stage += 1
+            else:
+                print('[Error]: is a invalid player.')
+        else:
+            self.group.send('错误：\n游戏没有开始！')
+            print('[Error]: 游戏没有开始！')
+    
+    def judge(self):
+        # 判断输赢
+        print('judge(): enter.')
+        try:
+            fingers = {}
+            for name, finger in self.results.items():
+                fingers[finger] = name
+
+            if len(fingers) == 3:
+                self.group.send('没有人赢，继续！')
+            elif len(fingers) == 1:
+                self.group.send('大家出的拳都一样，继续！')
+            elif len(fingers) == 0:
+                self.group.send('错误：\n抱歉，没有人出拳！')
+            elif len(fingers) == 2:
+                if (fingers[0] == FingerType.Rock and fingers[1] == FingerType.Scissors) or (fingers[0] == FingerType.Scissors and fingers[1] == FingerType.Rock):
+                    self.group.send('出 [石头] 的玩家获胜，继续！')
+                elif (fingers[0] == FingerType.Rock and fingers[1] == FingerType.Paper) or (fingers[0] == FingerType.Paper and fingers[1] == FingerType.Rock):
+                    self.group.send('出 [布] 的玩家获胜，继续！')
+                elif (fingers[0] == FingerType.Scissors and fingers[1] == FingerType.Paper) or (fingers[0] == FingerType.Paper and fingers[1] == FingerType.Scissors):
+                    self.group.send('出 [剪刀] 的玩家获胜，继续！')
+                else:
+                    self.group.send('错误：\n未知错误！')
+            else:
+                self.group.send('错误：\n出拳类型超过 3 种！')
+        except Exception as err:
+            display_exception(err)
+        print('judge(): leave.')
 
     def run(self):
         global finger_game_time
         global bot
         loop = 0
         start_time = time.time()
+        self.running = True
         while not self.stop_event.isSet():
             time.sleep(self.heart_time)
             loop += 1
@@ -111,14 +206,25 @@ class FingerGuessGame(threading.Thread):
                 start_time = time.time()
 
 def stop_finger_guess_game():
-    if fingerGuessGame != None:
+    global current_game
+    global fingerGuessGame    
+    if current_game == 1 and fingerGuessGame != None:
         fingerGuessGame.terminate()
+        current_game = 0
+        fingerGuessGame = None
 
 def create_finger_guess_game(group, players):
+    global current_game
     global fingerGuessGame
     global bot
+    if current_game != 0:
+        if current_game == 1:
+            group.send('警告：\n　　一个群在同一时刻只能创建一个 “剪刀石头布” 游戏，请先结束当前游戏！')
+        else:
+            group.send('警告：\n　　一个群在同一时刻只能创建一个游戏，请先结束当前游戏！')
+        return
     # print('create_finger_guess_game(): enter ...')
-    # group.send('正在创建 "剪刀石头布" 游戏……')
+    group.send('正在创建 "剪刀石头布" 游戏……')
     if fingerGuessGame != None:
         # print('create_finger_guess_game(): fingerGuessGame != None')
         group.send('警告：\n　　一个群在同一时刻只能创建一个 “剪刀石头布” 游戏，请先结束当前游戏！')
@@ -145,6 +251,7 @@ def create_finger_guess_game(group, players):
             game = FingerGuessGame(group, friends, players, finger_stop_event)
             if game != None:
                 game.start()
+                current_game = 1
                 fingerGuessGame = game
             else:
                 group.send('“剪刀石头布” 游戏创建失败！')
@@ -237,7 +344,7 @@ def handle_group_message(msg):
                                 players.append(player)
                     print(players)
                     if len(players) > 4:
-                        group.send('抱歉，"剪刀石头布" 游戏仅支持2至4名玩家，人太多了玩不转！请重新邀请玩家。')
+                        group.send('抱歉，"剪刀石头布" 游戏仅支持2至4名玩家，人太多了不好玩！请减少邀请的玩家数。')
                     if len(players) >= 2:
                         create_finger_guess_game(group, players)
                     else:
@@ -246,8 +353,27 @@ def handle_group_message(msg):
         elif len(msg.text) != 0:
             print(msg.text)
 
+def play_finger_guess_game(name, action):
+    global current_game
+    global fingerGuessGame
+    print("play_finger_guess_game(): enter.")
+    if fingerGuessGame != None:
+        action = action.strip()
+        action = action.strip('　')
+        print("play_finger_guess_game(): action = " + action)
+        if action == '石头' or action == '[拳头]':
+            fingerGuessGame.play(name, FingerType.Rock)            
+        elif action == '剪刀' or action == '[胜利]':
+            fingerGuessGame.play(name, FingerType.Scissors)
+        elif action == '布' or action == '[OK]':
+            fingerGuessGame.play(name, FingerType.Paper)
+    print("play_finger_guess_game(): leave.")
+
 def handle_friend_message(msg):
     global msg_delimiter
+    global current_game
+    global fingerGuessGame
+    global bot    
 
     name = msg.chat.name
     # print('name = ' + name)
@@ -257,6 +383,14 @@ def handle_friend_message(msg):
     tokens = re.split(msg_delimiter, msg.text)
     tokens = [t for t in tokens if t]
     print(tokens)
+
+    if current_game == 1 and fingerGuessGame != None:
+        # 游戏：剪刀石头布
+        if len(tokens) >= 1:
+            play_finger_guess_game(name, tokens[0])
+        else:
+            play_finger_guess_game(name, msg.text)
+
 
 @bot.register([Friend, Group])
 def auto_reply_friend(msg):
@@ -302,11 +436,12 @@ def auto_accept_friends(msg):
     # 接受好友请求
     new_friend = msg.card.accept()
     # 向新的好友发送消息
-    new_friend.send('哈哈，我自动接受了你的好友请求')
+    new_friend.send('哈哈，我自动接受了你的好友请求。[我是机器人]')
 
-def stopBot():
+def stop():
     bot.logout()
     time.sleep(1)
+    stop_finger_guess_game()
     stopThread()
 
 def stopThread():
