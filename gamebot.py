@@ -38,7 +38,7 @@ else:
 
 # msg_delimiter = r'[ ,;:~!@#\$\%\^&\*\?\.\'\"\t\v\f\r\n|\\/，；。‘’“”？·、！　]'
 msg_delimiter = ' |`|!|@|#|\$|\%|\^|&|\*|\?|~|,|;|:|/|\.|\'|\"|\t|\v|\r|\n|\f|\||，|；|。|‘|’|“|”|？|·|、|！|　'
-wait_time_sec = 10
+wait_time_sec = 5
 
 schedule_time = ""
 stat = {}
@@ -150,13 +150,14 @@ class FingerGuessGame(threading.Thread):
         print('play(): name = {}, finger = {}'.format(name, finger))
         if self.is_playing():
             if self.is_valid_player(name):
-                print('[Info]: is a valid player.')
+                # print('[Info]: is a valid player.')
                 self.results[name] = finger
                 if len(self.results) == self.total_players:
                     self.judge()
+                    self.results.clear()
                     self.stage += 1
-            else:
-                print('[Error]: is a invalid player.')
+            # else:
+                # print('[Error]: is a invalid player.')
         else:
             self.group.send('错误：\n游戏没有开始！')
             print('[Error]: 游戏没有开始！')
@@ -165,27 +166,75 @@ class FingerGuessGame(threading.Thread):
         # 判断输赢
         print('judge(): enter.')
         try:
-            fingers = {}
-            for name, finger in self.results.items():
-                fingers[finger] = name
+            # print(self.results)
 
-            if len(fingers) == 3:
-                self.group.send('没有人赢，继续！')
-            elif len(fingers) == 1:
-                self.group.send('大家出的拳都一样，继续！')
-            elif len(fingers) == 0:
+            finger_info = {}
+            for name, finger in self.results.items():
+                if not finger_info.get(finger):
+                    finger_info[finger] = []
+                finger_info[finger].append(name)
+            print(finger_info)
+
+            if len(finger_info) == 3:
+                self.group.send('没有人输也没有人赢，继续！')
+                print('没有人输也没有人赢，继续！')
+            elif len(finger_info) == 1:
+                if finger_info.get(FingerType.Rock):
+                    self.group.send('大家出的都是 [拳头]，没有人赢！')
+                    print('大家出的都是 [石头]，没有人赢！')
+                elif finger_info.get(FingerType.Scissors):
+                    self.group.send('大家出的都是 [胜利]，没有人赢！')
+                    print('大家出的都是 [剪刀]，没有人赢！')
+                elif finger_info.get(FingerType.Paper):
+                    self.group.send('大家出的都是 [OK]，没有人赢！')
+                    print('大家出的都是 [布]，没有人赢！')
+                else:
+                    self.group.send('大家出的都是一样的拳，且是未知类型，没有人赢！')
+                    print('大家出的都是一样的拳，且是未知类型，没有人赢！')
+            elif len(finger_info) == 0:
                 self.group.send('错误：\n抱歉，没有人出拳！')
-            elif len(fingers) == 2:
-                if (fingers[0] == FingerType.Rock and fingers[1] == FingerType.Scissors) or (fingers[0] == FingerType.Scissors and fingers[1] == FingerType.Rock):
-                    self.group.send('出 [石头] 的玩家获胜，继续！')
-                elif (fingers[0] == FingerType.Rock and fingers[1] == FingerType.Paper) or (fingers[0] == FingerType.Paper and fingers[1] == FingerType.Rock):
-                    self.group.send('出 [布] 的玩家获胜，继续！')
-                elif (fingers[0] == FingerType.Scissors and fingers[1] == FingerType.Paper) or (fingers[0] == FingerType.Paper and fingers[1] == FingerType.Scissors):
-                    self.group.send('出 [剪刀] 的玩家获胜，继续！')
+                print('错误：抱歉，没有人出拳！')
+            elif len(finger_info) == 2:
+                """
+                fingers = []
+                for finger in finger_info.keys():
+                    fingers.append(finger)
+                print(fingers)
+                if (fingers[0] == FingerType.Rock and fingers[1] == FingerType.Scissors) \
+                    or (fingers[0] == FingerType.Scissors and fingers[1] == FingerType.Rock):
+                    self.group.send('出 [拳头] 的玩家获胜！')
+                elif (fingers[0] == FingerType.Rock and fingers[1] == FingerType.Paper) \
+                    or (fingers[0] == FingerType.Paper and fingers[1] == FingerType.Rock):
+                    self.group.send('出 [OK] 的玩家获胜！')
+                elif (fingers[0] == FingerType.Scissors and fingers[1] == FingerType.Paper) \
+                    or (fingers[0] == FingerType.Paper and fingers[1] == FingerType.Scissors):
+                    self.group.send('出 [胜利] 的玩家获胜！')
                 else:
                     self.group.send('错误：\n未知错误！')
+                """
+                if finger_info.get(FingerType.Rock):
+                    if finger_info.get(FingerType.Scissors):
+                        self.group.send('出 [拳头] 的玩家获胜！')
+                        print('出 [石头] 的玩家获胜！')
+                    elif finger_info.get(FingerType.Paper):
+                        self.group.send('出 [OK] 的玩家获胜！')
+                        print('出 [布] 的玩家获胜！')
+                elif finger_info.get(FingerType.Scissors):
+                    if finger_info.get(FingerType.Paper):
+                        self.group.send('出 [胜利] 的玩家获胜！')
+                        print('出 [剪刀] 的玩家获胜！')
+                    else:
+                        self.group.send('错误：\n只有出 [胜利] 的玩家，存在未知类型的出拳！')
+                        print('错误：只有出 [剪刀] 的玩家，存在未知类型的出拳！')
+                elif finger_info.get(FingerType.Paper):
+                    self.group.send('错误：\n只有出 [OK] 的玩家，存在未知类型的出拳！')
+                    print('错误：只有出 [布] 的玩家，存在未知类型的出拳！')
+                else:
+                    self.group.send('错误：\n未知错误！')
+                    print('错误：未知错误！')
             else:
                 self.group.send('错误：\n出拳类型超过 3 种！')
+                print('错误：出拳类型超过 3 种！')
         except Exception as err:
             display_exception(err)
         print('judge(): leave.')
@@ -356,6 +405,7 @@ def handle_group_message(msg):
 def play_finger_guess_game(name, action):
     global current_game
     global fingerGuessGame
+    print('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
     print("play_finger_guess_game(): enter.")
     if fingerGuessGame != None:
         action = action.strip()
@@ -368,6 +418,7 @@ def play_finger_guess_game(name, action):
         elif action == '布' or action == '[OK]':
             fingerGuessGame.play(name, FingerType.Paper)
     print("play_finger_guess_game(): leave.")
+    print('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
 
 def handle_friend_message(msg):
     global msg_delimiter
@@ -382,7 +433,7 @@ def handle_friend_message(msg):
     # print('msg_delimiter = ' + msg_delimiter)
     tokens = re.split(msg_delimiter, msg.text)
     tokens = [t for t in tokens if t]
-    print(tokens)
+    # print(tokens)
 
     if current_game == 1 and fingerGuessGame != None:
         # 游戏：剪刀石头布
@@ -390,6 +441,8 @@ def handle_friend_message(msg):
             play_finger_guess_game(name, tokens[0])
         else:
             play_finger_guess_game(name, msg.text)
+    else:
+        print(tokens)
 
 
 @bot.register([Friend, Group])
