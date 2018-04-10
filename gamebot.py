@@ -30,27 +30,32 @@ stat = {}
 bot = Bot()
 
 fingerGuessGame = None
+finger_game_time = ""
+finger_stop_event = threading.Event()
 
 def str_split(str, seperators):
     result = [str]
     for seperator in seperators:
         tokens = []
         map(lambda t: tokens.extend(t.split(seperator)), result)
-        print("result is ", result)
+        # print("result is ", result)
         result = tokens
     return result
 
 def str_length(str):
     length = len(str)
     utf8_length = len(str.encode('utf-8'))
-    length = (utf8_length - length)/2 + length
+    length = (utf8_length - length) / 2 + length
     return length
 
-class FingerGuessGame():
-    def __init__(self, group, friends, players):
+class FingerGuessGame(threading.Thread):
+    def __init__(self, group, friends, players, stopEvent = None):
+        super(FingerGuessGame, self).__init__()
         self.group = group
         self.friends = friends
         self.players = players
+        self.stopEvent = stopEvent
+        self.heart_time = 1
 
     def reset(self):
         self.stage = 0
@@ -59,11 +64,46 @@ class FingerGuessGame():
     def start(self):
         self.reset()
 
+        msg_text = "“剪刀石头布” 游戏创建成功！\n\n参与的玩家是：\n\n"
+        for player in players:
+            msg_text += "　" + player + "\n"
+        msg_text += "\n请以上玩家点击我的头像，私密我回复数字 66，代表开始游戏，注意不是发在当前群里，而是私密我！"
+        self.group.send(msg_text)
+
+    def terminate(self):
+        self.stop()
+
+    def stop(self):
+        global fingerGuessGame
+        print("[Info] Stopping FingerGuessGame thread, waiting for a while...")
+        self.stopEvent.set()
+        if fingerGuessGame != None:
+            fingerGuessGame.join()
+            print("[Info] FingerGuessGame thread have stopped.")
+
+    def run(self):
+        global finger_game_time
+        global bot
+        loop = 0
+        start_time = time.time()
+        while not self.stopEvent.isSet():
+            time.sleep(self.heart_time)
+            loop += 1
+            if loop >= (300 / self.heart_time):
+                loop = 0
+            cur_time = time.time()
+            if (cur_time - start_time) > 60 * 1000:
+                start_time = time.time()
+
+def stop_finger_guess_game():
+    if fingerGuessGame != None:
+        fingerGuessGame.terminate()
+
 def create_finger_guess_game(group, players):
     global fingerGuessGame
     global bot
     # print("create_finger_guess_game(): enter ...")
-    group.send('正在创建 "剪刀石头布" 游戏中……')
+    group.send('正在创建 "剪刀石头布" 游戏……')
     if fingerGuessGame != None:
         # print("create_finger_guess_game(): fingerGuessGame != None")
         group.send("警告：\n　　一个群在同一时刻只能创建一个 “剪刀石头布” 游戏，请先结束当前游戏！")
@@ -86,16 +126,11 @@ def create_finger_guess_game(group, players):
                 group.send("错误：\n　　玩家: [" + player + "] 还未添加本游戏机器人的微信好友，受邀请的玩家必须先把我加为好友，才能进行游戏！")
                 return
         if len(friends) == len(players):
-            game = FingerGuessGame(group, friends, players)
+            finger_stop_event.clear()
+            game = FingerGuessGame(group, friends, players, finger_stop_event)
             if game != None:
                 game.start()
                 fingerGuessGame = game
-
-                msg_text = "恭喜，“剪刀石头布” 游戏创建成功！\n\n参与的玩家是：\n\n"
-                for player in players:
-                    msg_text += "　" + player + "\n"
-                msg_text += "\n请以上玩家点击我的头像，私密我回复数字 66，代表开始游戏，注意不是发在当前群里，是私密我！"
-                group.send(msg_text)
             else:
                 group.send("“剪刀石头布” 游戏创建失败！")
         else:
@@ -262,10 +297,10 @@ def stopBot():
 def stopThread():
     global stopEvent
     global scheduleThread
-    print("[Info] stopThread(), waiting for {} seconds...".format(wait_time_sec))
+    print("[Info] Stopping ScheduleThread, waiting for {} seconds...".format(wait_time_sec))
     stopEvent.set()
     scheduleThread.join()
-    print("[Info] scheduleThread is stopped.")
+    print("[Info] ScheduleThread have stopped.")
 
 class ScheduleThread(threading.Thread):
     """
