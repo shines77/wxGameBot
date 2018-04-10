@@ -27,7 +27,7 @@ schedule_time = ""
 stat = {}
 
 # 初始化机器人，扫码登陆
-bot = Bot()
+bot = Bot(cache_path = True, console_qr = True)
 
 fingerGuessGame = None
 finger_game_time = ""
