@@ -90,42 +90,42 @@ class Console:
 
     def log(self, *args):
         if self.level.value >= LogType.DEFAULT.value:
-            text = self.join_text("[Default]  ", args)
+            text = self.join_text("[Default] ", args)
             print(text)
 
     def info(self, *args):
         if self.level.value >= LogType.INFO.value:
-            text = self.join_text("[Info]     ", args)
+            text = self.join_text("[Info] ", args)
             print(text)
 
     def warn(self, *args):
         if self.level.value >= LogType.WARNING.value:
-            text = self.join_text("[Warning]  ", args)
+            text = self.join_text("[Warning] ", args)
             print(text)
 
     def verbo(self, *args):
         if self.level.value >= LogType.VERBO.value:
-            text = self.join_text("[Verbo]    ", args)
+            text = self.join_text("[Verbo] ", args)
             print(text)
 
     def trace(self, *args):
         if self.level.value >= LogType.TRACE.value:
-            text = self.join_text("[Trace]    ", args)
+            text = self.join_text("[Trace] ", args)
             print(text)
 
     def debug(self, *args):
         if self.level.value >= LogType.DEBUG.value:
-            text = self.join_text("[Debug]    ", args)
+            text = self.join_text("[Debug] ", args)
             print(text)
 
     def error(self, *args):
         if self.level.value >= LogType.ERROR.value:
-            text = self.join_text("[Error]    ", args)
+            text = self.join_text("[Error] ", args)
             print(text)
 
     def fatal(self, *args):
         if self.level.value >= LogType.FATAL.value:
-            text = self.join_text("[Fatal]    ", args)
+            text = self.join_text("[Fatal] ", args)
             print(text)
 
     def critical(self, *args):
@@ -217,7 +217,7 @@ class FingerGuessGame(threading.Thread):
 
                 msg_text = '“剪刀石头布” 游戏创建成功！\n\n参与的玩家是：\n\n'
                 for player in self.players:
-                    msg_text += '　' + player + '\n'
+                    msg_text += '　[' + player + '] \n'
                 msg_text += '\n请以上玩家点击我的头像，私密我回复数字 66，表示确认。注意：不是发在当前群里，而是私密我！！'
                 self.send_group_msg(msg_text)
             else:
