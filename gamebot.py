@@ -492,7 +492,7 @@ def play_finger_guess_game(name, action):
     global console
     global current_game
     global fingerGuessGame
-    console.trace('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
+    console.info('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
     console.trace("play_finger_guess_game(): enter.")
     if fingerGuessGame != None:
         action = action.strip()
@@ -505,7 +505,7 @@ def play_finger_guess_game(name, action):
         elif action == '布' or action == '[OK]':
             fingerGuessGame.play(name, FingerType.Paper)
     console.trace("play_finger_guess_game(): leave.")
-    console.trace('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
+    console.info('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
 
 def handle_friend_message(msg):
     global msg_delimiter
