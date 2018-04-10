@@ -49,12 +49,12 @@ def str_length(str):
     return length
 
 class FingerGuessGame(threading.Thread):
-    def __init__(self, group, friends, players, stopEvent = None):
+    def __init__(self, group, friends, players, stop_event = None):
         super(FingerGuessGame, self).__init__()
         self.group = group
         self.friends = friends
         self.players = players
-        self.stopEvent = stopEvent
+        self.stop_event = stop_event
         self.heart_time = 1
 
     def reset(self):
@@ -65,7 +65,7 @@ class FingerGuessGame(threading.Thread):
         self.reset()
 
         msg_text = "“剪刀石头布” 游戏创建成功！\n\n参与的玩家是：\n\n"
-        for player in players:
+        for player in self.players:
             msg_text += "　" + player + "\n"
         msg_text += "\n请以上玩家点击我的头像，私密我回复数字 66，代表开始游戏，注意不是发在当前群里，而是私密我！"
         self.group.send(msg_text)
@@ -76,7 +76,7 @@ class FingerGuessGame(threading.Thread):
     def stop(self):
         global fingerGuessGame
         print("[Info] Stopping FingerGuessGame thread, waiting for a while...")
-        self.stopEvent.set()
+        self.stop_event.set()
         if fingerGuessGame != None:
             fingerGuessGame.join()
             print("[Info] FingerGuessGame thread have stopped.")
@@ -86,7 +86,7 @@ class FingerGuessGame(threading.Thread):
         global bot
         loop = 0
         start_time = time.time()
-        while not self.stopEvent.isSet():
+        while not self.stop_event.isSet():
             time.sleep(self.heart_time)
             loop += 1
             if loop >= (300 / self.heart_time):
