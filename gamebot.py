@@ -54,6 +54,85 @@ fingerGuessGame = None
 finger_game_time = ''
 finger_stop_event = threading.Event()
 
+@unique
+class LogType(Enum):
+    OFF = 0
+    DEFAULT = 1
+    INFO = 2
+    WARNING = 3
+    VERBO = 4
+    TRACE = 5
+    DEBUG = 6
+    ERROR = 7
+    FATAL = 8
+    CRITICAL = 9
+    ALL = 10
+
+class Console:
+    def __init__(self, level = LogType.WARNING):
+        self.level = level
+
+    def join_text(self, log_type, *args):
+        text = log_type
+        i = 0
+        for (arg,) in args:
+            i += 1
+            if i < len(args):
+                text += str(arg) + ' '
+            else:
+                text += str(arg)
+        return text
+
+    def print(self, *args):
+        if self.level.value >= LogType.DEFAULT.value:
+            text = self.join_text('', args)
+            print(text)
+
+    def log(self, *args):
+        if self.level.value >= LogType.DEFAULT.value:
+            text = self.join_text("[Default]  ", args)
+            print(text)
+
+    def info(self, *args):
+        if self.level.value >= LogType.INFO.value:
+            text = self.join_text("[Info]     ", args)
+            print(text)
+
+    def warn(self, *args):
+        if self.level.value >= LogType.WARNING.value:
+            text = self.join_text("[Warning]  ", args)
+            print(text)
+
+    def verbo(self, *args):
+        if self.level.value >= LogType.VERBO.value:
+            text = self.join_text("[Verbo]    ", args)
+            print(text)
+
+    def trace(self, *args):
+        if self.level.value >= LogType.TRACE.value:
+            text = self.join_text("[Trace]    ", args)
+            print(text)
+
+    def debug(self, *args):
+        if self.level.value >= LogType.DEBUG.value:
+            text = self.join_text("[Debug]    ", args)
+            print(text)
+
+    def error(self, *args):
+        if self.level.value >= LogType.ERROR.value:
+            text = self.join_text("[Error]    ", args)
+            print(text)
+
+    def fatal(self, *args):
+        if self.level.value >= LogType.FATAL.value:
+            text = self.join_text("[Fatal]    ", args)
+            print(text)
+
+    def critical(self, *args):
+        if self.level.value >= LogType.CRITICAL.value:
+            text = self.join_text("[Critical] ", args)
+            print(text)
+
 def str_split(str, seperators):
     result = [str]
     for seperator in seperators:
@@ -70,13 +149,21 @@ def str_length(str):
     return length
 
 def display_exception(err):
-    print('===================================================================')
-    # print('str(Exception):        ', str(Exception))
-    print('str(err):              ', str(err))
-    print('repr(err):             ', repr(err))
-    print('traceback.print_exc(): ', traceback.print_exc())
-    print('traceback.format_exc():\n%s' % traceback.format_exc())
-    print('===================================================================')
+    global console
+    console.info('===================================================================')
+    # console.info('str(Exception):        ', str(Exception))
+    console.info('str(err):              ', str(err))
+    console.info('repr(err):             ', repr(err))
+    console.info('traceback.print_exc(): ', traceback.print_exc())
+    console.info('traceback.format_exc():\n%s' % traceback.format_exc())
+    console.info('===================================================================')
+
+def send_group_msg(group, msg_text):
+    global console
+    if group != None:
+        group.send(msg_text)
+    msg_text = msg_text.replace('\n', '')
+    console.info(msg_text)
 
 @unique
 class FingerType(Enum):
@@ -115,9 +202,16 @@ class FingerGuessGame(threading.Thread):
                 return True
         return False
 
+    def send_group_msg(self, msg_text):
+        global console
+        self.group.send(msg_text)
+        msg_text = msg_text.replace('\n', '')
+        console.info(msg_text)
+
     def start(self):
+        global console
         try:
-            if not (self.is_playing()):
+            if not self.is_playing():
                 self.reset()
                 self.playing = True
 
@@ -125,9 +219,9 @@ class FingerGuessGame(threading.Thread):
                 for player in self.players:
                     msg_text += '　' + player + '\n'
                 msg_text += '\n请以上玩家点击我的头像，私密我回复数字 66，表示确认。注意：不是发在当前群里，而是私密我！！'
-                self.group.send(msg_text)
+                self.send_group_msg(msg_text)
             else:
-                self.group.send('错误：\n游戏已经在进行中！')
+                self.send_group_msg('错误：\n游戏已经在进行中！')
         except Exception as err:
             display_exception(err)
 
@@ -135,111 +229,101 @@ class FingerGuessGame(threading.Thread):
         self.stop()
 
     def stop(self):
+        global console
         global fingerGuessGame
         if self.is_playing():
-            print('[Info] Stopping FingerGuessGame thread, waiting for...')
+            console.info('Stopping FingerGuessGame thread, waiting for...')
             self.stop_event.set()
             if fingerGuessGame != None:
                 if self.is_running():
                     fingerGuessGame.join()
-                print('[Info] FingerGuessGame thread have stopped.')
+                console.info('FingerGuessGame thread have stopped.')
                 self.running = False
             self.playing = False
 
     def play(self, name, finger):
-        print('play(): name = {}, finger = {}'.format(name, finger))
+        global console
+        console.info('play(): name = {}, finger = {}'.format(name, finger))
         if self.is_playing():
             if self.is_valid_player(name):
-                # print('[Info]: is a valid player.')
+                # console.info('[Info]: is a valid player.')
                 self.results[name] = finger
                 if len(self.results) == self.total_players:
                     self.judge()
                     self.results.clear()
                     self.stage += 1
             # else:
-                # print('[Error]: is a invalid player.')
+                # console.info('[Error]: is a invalid player.')
         else:
-            self.group.send('错误：\n游戏没有开始！')
-            print('[Error]: 游戏没有开始！')
+            self.send_group_msg('错误：\n游戏没有开始！')
     
     def judge(self):
         # 判断输赢
-        print('judge(): enter.')
+        global console
+        console.trace('judge(): enter.')
         try:
-            # print(self.results)
+            # console.info(self.results)
 
             finger_info = {}
             for name, finger in self.results.items():
                 if not finger_info.get(finger):
                     finger_info[finger] = []
                 finger_info[finger].append(name)
-            print(finger_info)
+            console.info(finger_info)
 
             if len(finger_info) == 3:
-                self.group.send('没有人输也没有人赢，继续！')
-                print('没有人输也没有人赢，继续！')
+                self.send_group_msg('没有人输也没有人赢，平局！')
             elif len(finger_info) == 1:
                 if finger_info.get(FingerType.Rock):
-                    self.group.send('大家出的都是 [拳头]，没有人赢！')
-                    print('大家出的都是 [石头]，没有人赢！')
+                    self.send_group_msg('大家出的都是 [拳头] (石头)，平局！')
                 elif finger_info.get(FingerType.Scissors):
-                    self.group.send('大家出的都是 [胜利]，没有人赢！')
-                    print('大家出的都是 [剪刀]，没有人赢！')
+                    self.send_group_msg('大家出的都是 [胜利] (剪刀)，平局！')
                 elif finger_info.get(FingerType.Paper):
-                    self.group.send('大家出的都是 [OK]，没有人赢！')
-                    print('大家出的都是 [布]，没有人赢！')
+                    self.send_group_msg('大家出的都是 [OK] (布)，平局！')
                 else:
-                    self.group.send('大家出的都是一样的拳，且是未知类型，没有人赢！')
-                    print('大家出的都是一样的拳，且是未知类型，没有人赢！')
+                    self.send_group_msg('大家出的都是一样的拳，且是未知类型，平局！')
             elif len(finger_info) == 0:
-                self.group.send('错误：\n抱歉，没有人出拳！')
-                print('错误：抱歉，没有人出拳！')
+                self.send_group_msg('错误：\n抱歉，没有人出拳！')
             elif len(finger_info) == 2:
                 """
                 fingers = []
                 for finger in finger_info.keys():
                     fingers.append(finger)
-                print(fingers)
+                console.info(fingers)
                 if (fingers[0] == FingerType.Rock and fingers[1] == FingerType.Scissors) \
                     or (fingers[0] == FingerType.Scissors and fingers[1] == FingerType.Rock):
-                    self.group.send('出 [拳头] 的玩家获胜！')
+                    self.send_group_msg('出 [拳头] (石头) 的玩家获胜！')
                 elif (fingers[0] == FingerType.Rock and fingers[1] == FingerType.Paper) \
                     or (fingers[0] == FingerType.Paper and fingers[1] == FingerType.Rock):
-                    self.group.send('出 [OK] 的玩家获胜！')
+                    self.send_group_msg('出 [OK] (布) 的玩家获胜！')
                 elif (fingers[0] == FingerType.Scissors and fingers[1] == FingerType.Paper) \
                     or (fingers[0] == FingerType.Paper and fingers[1] == FingerType.Scissors):
-                    self.group.send('出 [胜利] 的玩家获胜！')
+                    self.send_group_msg('出 [胜利] (剪刀) 的玩家获胜！')
                 else:
-                    self.group.send('错误：\n未知错误！')
+                    self.send_group_msg('错误：\n未知错误！')
                 """
                 if finger_info.get(FingerType.Rock):
                     if finger_info.get(FingerType.Scissors):
-                        self.group.send('出 [拳头] 的玩家获胜！')
-                        print('出 [石头] 的玩家获胜！')
+                        self.send_group_msg('出 [拳头] (石头) 的玩家获胜！')
                     elif finger_info.get(FingerType.Paper):
-                        self.group.send('出 [OK] 的玩家获胜！')
-                        print('出 [布] 的玩家获胜！')
+                        self.send_group_msg('出 [OK] (布) 的玩家获胜！')
                 elif finger_info.get(FingerType.Scissors):
                     if finger_info.get(FingerType.Paper):
-                        self.group.send('出 [胜利] 的玩家获胜！')
-                        print('出 [剪刀] 的玩家获胜！')
+                        self.send_group_msg('出 [胜利] (剪刀) 的玩家获胜！')
                     else:
-                        self.group.send('错误：\n只有出 [胜利] 的玩家，存在未知类型的出拳！')
-                        print('错误：只有出 [剪刀] 的玩家，存在未知类型的出拳！')
+                        self.send_group_msg('错误：\n只有出 [胜利] (剪刀) 的玩家，且存在未知类型的出拳！')
                 elif finger_info.get(FingerType.Paper):
-                    self.group.send('错误：\n只有出 [OK] 的玩家，存在未知类型的出拳！')
-                    print('错误：只有出 [布] 的玩家，存在未知类型的出拳！')
+                    self.send_group_msg('错误：\n只有出 [OK] (布) 的玩家，且存在未知类型的出拳！')
                 else:
-                    self.group.send('错误：\n未知错误！')
-                    print('错误：未知错误！')
+                    self.send_group_msg('错误：\n未知错误！')
             else:
-                self.group.send('错误：\n出拳类型超过 3 种！')
-                print('错误：出拳类型超过 3 种！')
+                self.send_group_msg('错误：\n出拳类型超过 3 种！')
         except Exception as err:
             display_exception(err)
-        print('judge(): leave.')
+        console.trace('judge(): leave.')
 
     def run(self):
+        global console
         global finger_game_time
         global bot
         loop = 0
@@ -263,37 +347,38 @@ def stop_finger_guess_game():
         fingerGuessGame = None
 
 def create_finger_guess_game(group, players):
+    global console
     global current_game
     global fingerGuessGame
     global bot
     if current_game != 0:
         if current_game == 1:
-            group.send('警告：\n　　一个群在同一时刻只能创建一个 “剪刀石头布” 游戏，请先结束当前游戏！')
+            send_group_msg(group, '警告：\n　　一个群在同一时刻只能创建一个 “剪刀石头布” 游戏，请先结束当前游戏！')
         else:
-            group.send('警告：\n　　一个群在同一时刻只能创建一个游戏，请先结束当前游戏！')
+            send_group_msg(group, '警告：\n　　一个群在同一时刻只能创建一个游戏，请先结束当前游戏！')
         return
-    # print('create_finger_guess_game(): enter ...')
-    group.send('正在创建 "剪刀石头布" 游戏……')
+    # console.trace('create_finger_guess_game(): enter ...')
+    send_group_msg(group, '正在创建 "剪刀石头布" 游戏……')
     if fingerGuessGame != None:
-        # print('create_finger_guess_game(): fingerGuessGame != None')
-        group.send('警告：\n　　一个群在同一时刻只能创建一个 “剪刀石头布” 游戏，请先结束当前游戏！')
+        # console.trace('create_finger_guess_game(): fingerGuessGame != None')
+        send_group_msg(group, '警告：\n　　一个群在同一时刻只能创建一个 “剪刀石头布” 游戏，请先结束当前游戏！')
     else:
         friends = []
-        # print('create_finger_guess_game(): get friends.')
+        # console.trace('create_finger_guess_game(): get friends.')
         for player in players:
-            # print(player)
+            # console.info(player)
             friend = bot.friends().search(player)
-            # print(len(friend))
-            # print(friend)
+            # console.info(len(friend))
+            # console.info(friend)
             if len(friend) > 0:
                 friend = ensure_one(friend)
                 if friend in group:
                     friends.append(friend)
                 else:
-                    group.send('错误：\n　　玩家: [" + player + "] 不在当前微信群里，不能正常启动游戏！')
+                    send_group_msg(group, '错误：\n　　玩家: [" + player + "] 不在当前微信群里，不能正常启动游戏！')
                     return
             else:
-                group.send('错误：\n　　玩家: [" + player + "] 还未添加本游戏机器人的微信好友，受邀请的玩家必须先把我加为好友，才能进行游戏！')
+                send_group_msg(group, '错误：\n　　玩家: [" + player + "] 还未添加本游戏机器人的微信好友，受邀请的玩家必须先把我加为好友，才能进行游戏！')
                 return
         if len(friends) == len(players):
             finger_stop_event.clear()
@@ -303,16 +388,17 @@ def create_finger_guess_game(group, players):
                 current_game = 1
                 fingerGuessGame = game
             else:
-                group.send('“剪刀石头布” 游戏创建失败！')
+                send_group_msg(group, '“剪刀石头布” 游戏创建失败！')
         else:
-            group.send('错误：\n　　还有玩家还未添加本游戏机器人的微信好友！')
+            send_group_msg(group, '错误：\n　　还有玩家还未添加本游戏机器人的微信好友！')
     
-    # print('create_finger_guess_game(): leave ...')
+    # console.trace('create_finger_guess_game(): leave ...')
 
 def tuling_auto_reply(msg):
     return "reply: " + msg
 
 def handle_group_message(msg):
+    global console
     global msg_delimiter
     group_name = msg.chat.name
     member_name = msg.member.name
@@ -335,10 +421,10 @@ def handle_group_message(msg):
     group = bot.groups().search(group_name)
     if len(group) > 0:
         if len(group) > 1:
-            print('Error: group_name = [{}]，与该群同名的群不止一个，一共有 {} 个。'.format(group_name, len(group)))
+            console.error('Error: group_name = [{}]，与该群同名的群不止一个，一共有 {} 个。'.format(group_name, len(group)))
         group = ensure_one(group)
     else:
-        print('Error: group_name = [' + group_name + ']，找不到该群。')
+        console.error('Error: group_name = [' + group_name + ']，找不到该群。')
         return
 
     if msg.text == '发言排名' or msg.text == '发言排行榜':
@@ -367,10 +453,10 @@ def handle_group_message(msg):
             msg_text = msg.text + '：\n' + msg_text
             group.send(msg_text)
     else:
-        # print('msg_delimiter = " + msg_delimiter)
+        # console.info('msg_delimiter = " + msg_delimiter)
         tokens = re.split(msg_delimiter, msg.text)
         tokens = [t for t in tokens if t]
-        # print(tokens)
+        # console.info(tokens)
 
         if len(tokens) >= 1:
             if tokens[0] == '猜拳':
@@ -378,12 +464,12 @@ def handle_group_message(msg):
                 if len(tokens) >= 2 and tokens[1] == '邀请':
                     # 邀请玩家, 格式: @玩家1, @玩家2, @玩家3, @我f
                     tmp_players = msg.text.split('@')
-                    # print(tmp_players)
+                    # console.info(tmp_players)
                     players = []
                     if len(tmp_players) >= 2:
                         tmp_players.pop(0)
                         for player in tmp_players:
-                            # print(player)
+                            # console.info(player)
                             player = player.strip()
                             player = player.strip('\u2005')
                             player = player.strip('　')
@@ -391,34 +477,35 @@ def handle_group_message(msg):
                                 players.append(member_name)
                             else:
                                 players.append(player)
-                    print(players)
+                    console.info(players)
                     if len(players) > 4:
-                        group.send('抱歉，"剪刀石头布" 游戏仅支持2至4名玩家，人太多了不好玩！请减少邀请的玩家数。')
+                        send_group_msg(group, '抱歉，"剪刀石头布" 游戏仅支持2至4名玩家，人太多了不好玩！请减少邀请的玩家数。')
                     if len(players) >= 2:
                         create_finger_guess_game(group, players)
                     else:
-                        group.send('抱歉，"剪刀石头布" 游戏必须两人或两人以上才行进行！请重新邀请玩家。')
+                        send_group_msg(group, '抱歉，"剪刀石头布" 游戏必须两人或两人以上才行进行！请重新邀请玩家。')
 
         elif len(msg.text) != 0:
-            print(msg.text)
+            console.info(msg.text)
 
 def play_finger_guess_game(name, action):
+    global console
     global current_game
     global fingerGuessGame
-    print('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
-    print("play_finger_guess_game(): enter.")
+    console.trace('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
+    console.trace("play_finger_guess_game(): enter.")
     if fingerGuessGame != None:
         action = action.strip()
         action = action.strip('　')
-        print("play_finger_guess_game(): action = " + action)
+        console.trace("play_finger_guess_game(): action = " + action)
         if action == '石头' or action == '[拳头]':
             fingerGuessGame.play(name, FingerType.Rock)            
         elif action == '剪刀' or action == '[胜利]':
             fingerGuessGame.play(name, FingerType.Scissors)
         elif action == '布' or action == '[OK]':
             fingerGuessGame.play(name, FingerType.Paper)
-    print("play_finger_guess_game(): leave.")
-    print('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
+    console.trace("play_finger_guess_game(): leave.")
+    console.trace('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
 
 def handle_friend_message(msg):
     global msg_delimiter
@@ -427,13 +514,13 @@ def handle_friend_message(msg):
     global bot    
 
     name = msg.chat.name
-    # print('name = ' + name)
-    # print('msg.text = ' + msg.text)
+    # console.trace('name = ' + name)
+    # console.trace('msg.text = ' + msg.text)
 
-    # print('msg_delimiter = ' + msg_delimiter)
+    # console.trace('msg_delimiter = ' + msg_delimiter)
     tokens = re.split(msg_delimiter, msg.text)
     tokens = [t for t in tokens if t]
-    # print(tokens)
+    # console.trace(tokens)
 
     if current_game == 1 and fingerGuessGame != None:
         # 游戏：剪刀石头布
@@ -442,7 +529,7 @@ def handle_friend_message(msg):
         else:
             play_finger_guess_game(name, msg.text)
     else:
-        print(tokens)
+        console.info(tokens)
 
 
 @bot.register([Friend, Group])
@@ -450,14 +537,15 @@ def auto_reply_friend(msg):
     """
     消息自动回复
     """
-    print(msg)
+    global console
+    console.info(msg)
     """
     if isinstance(msg.chat, Group):
-        print('group = ' + msg.chat.name)
-        print('name = ' + msg.member.name)
+        console.info('group = ' + msg.chat.name)
+        console.info('name = ' + msg.member.name)
     elif isinstance(msg.chat, Friend):
-        print('name = ' + msg.chat.name)
-    print('msg.text = ' + msg.text)
+        console.info('name = ' + msg.chat.name)
+    console.info('msg.text = ' + msg.text)
     """
 
     if isinstance(msg.chat, Group):
@@ -481,7 +569,7 @@ def auto_reply_friend(msg):
 # 打印来自其他好友、群聊和公众号的消息
 # @bot.register()
 # def print_others(msg):
-#    print(msg)
+#    console.info(msg)
 
 # 自动接受新的好友请求
 @bot.register(msg_types=FRIENDS)
@@ -498,12 +586,13 @@ def stop():
     stopThread()
 
 def stopThread():
+    global console
     global stopEvent
     global scheduleThread
-    print('[Info] Stopping ScheduleThread, waiting for {} seconds...'.format(wait_time_sec))
+    console.info('Stopping ScheduleThread, waiting for {} seconds...'.format(wait_time_sec))
     stopEvent.set()
     scheduleThread.join()
-    print('[Info] ScheduleThread have stopped.')
+    console.info('ScheduleThread have stopped.')
 
 class ScheduleThread(threading.Thread):
     """
@@ -519,6 +608,7 @@ class ScheduleThread(threading.Thread):
     计划任务线程
     """
     def run(self):
+        global console
         global schedule_time
         global bot
         global stat
@@ -529,18 +619,18 @@ class ScheduleThread(threading.Thread):
             loop += 1
             if loop >= (300 / wait_time_sec):
                 loop = 0
-                print('[Info] cur_time: {}, schedule_time: {}'.format(cur_time, schedule_time))
+                console.info('cur_time: {}, schedule_time: {}'.format(cur_time, schedule_time))
             if cur_time == schedule_time:
                 continue
             elif cur_time == '09:00':
                 for group in bot.groups():
-                    print(group.name)
+                    console.info(group.name)
                     if not stat[group.name]:
                         continue
                     msg_text = ''
                     index = 1
                     for rank in stat[group.name]['rank']:
-                        # print('{}: {} {}'.format(index, rank['name'], rank['time']))
+                        # console.info('{}: {} {}'.format(index, rank['name'], rank['time']))
                         msg_text += '{}：{} {}\n'.format(index, rank['name'], rank['time'])
                         index += 1
                     if msg_text:
@@ -548,14 +638,14 @@ class ScheduleThread(threading.Thread):
                         group.send(msg_text)
             elif cur_time == '23:00':
                 for group in bot.groups():
-                    print(group.name)
+                    console.info(group.name)
                     if not stat[group.name]:
                         continue
                     msg_text = ''
                     index = 1
                     count = stat[group.name]['count']
                     for name in sorted(count, key=lambda x: count[x], reverse=True):
-                        # print('{}: {} {}'.format(index, rank['name'], rank['time']))
+                        # console.info('{}: {} {}'.format(index, rank['name'], rank['time']))
                         msg_text += '{}：{} 发言了 {} 次\n'.format(index, name, count[name])
                         index += 1
                     if msg_text:
@@ -569,6 +659,8 @@ class ScheduleThread(threading.Thread):
 
 if __name__ == '__main__':
     # print('__main__ = ' + __name__)
+
+    console = Console(LogType.WARNING)  
 
     stopEvent = threading.Event()
     scheduleThread = ScheduleThread("scheduler", stopEvent)
