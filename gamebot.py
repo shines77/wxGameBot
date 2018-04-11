@@ -13,7 +13,7 @@ from enum import unique, Enum, IntEnum
 
 import threading, time, json, re
 import chardet
-import sys
+import sys, math
 import traceback
 
 PY_VERSION = sys.version
@@ -133,6 +133,11 @@ class Console:
             text = self.join_text("[Critical] ", args)
             print(text)
 
+    def nothing(self, *args):
+        if self.level.value > LogType.ALL.value:
+            text = self.join_text("[nothing] ", args)
+            print(text)
+
 def str_split(str, seperators):
     result = [str]
     for seperator in seperators:
@@ -214,13 +219,14 @@ def get_winner_value(winner_type):
     else:
         return -1
 
+# '👊', '✌', '👋', '✋'
 def get_finger_emote(finger_type):
     if finger_type == FingerType.Rock:
         return '[拳头]'
     elif finger_type == FingerType.Scissors:
         return '[胜利]'
     elif finger_type == FingerType.Paper:
-        return '[OK]'
+        return '👋'
     else:
         return '[疑问]'
 
@@ -263,9 +269,11 @@ class FingerGuessGame(threading.Thread):
         self.playing = False
         self.running = False
         self.stage = 0
-        self.max_stage = 20
+        self.max_stage = 7
         self.results = {}
         self.scores = {}
+        for player in self.players:
+            self.scores[player] = { 'win': 0, 'lose': 0, 'deuce': 0, 'error': 0 }
 
     def is_playing(self):
         return self.playing
@@ -285,18 +293,15 @@ class FingerGuessGame(threading.Thread):
         msg_text = ''
         console.info(self.results)
         try:
-            msg_out = '第{}局: '.format(self.stage + 1)
+            msg_out = '第{}轮: '.format(self.stage + 1)
             i = 0
-            index = -1
             for player in self.players:
-                if player == player_name:
-                    index = i
                 if player in self.results:
                     msg_out += get_finger_emote(self.results[player])
                 else:
                     msg_out += '[衰]'
                 if player == player_name:
-                    msg_out += '(*)'
+                    msg_out += ' *'
                 i += 1
                 if i < len(self.players):
                     msg_out += ' vs '
@@ -327,14 +332,14 @@ class FingerGuessGame(threading.Thread):
         except Exception as err:
             display_exception(err)
         console.trace("make_player_msg(): leave.")
-        return (msg_out + ', ' + msg_text)
+        return (msg_out + ' , ' + msg_text)
 
     def make_group_msg(self, winner_type, msg_text):
         global console
         console.trace("make_group_msg(): enter.")
         try:
             winner_list = []
-            msg_out = '第{}局: '.format(self.stage + 1)
+            msg_out = '第{}轮: '.format(self.stage + 1)
             i = 0
             for player in self.players:
                 i += 1
@@ -380,7 +385,7 @@ class FingerGuessGame(threading.Thread):
         except Exception as err:
             display_exception(err)
         console.trace("make_group_msg(): leave.")
-        return (msg_out + ', ' + msg_text)
+        return (msg_out + ' , ' + msg_text)
 
     def send_group_msg(self, msg_text):
         global console
@@ -410,6 +415,93 @@ class FingerGuessGame(threading.Thread):
         except Exception as err:
             display_exception(err)
         console.trace("FingerGuessGame::send_msg(): leave.")
+
+    def counter_winlose(self, winner_type):
+        global console
+        console.trace("counter_winlose(): enter.")
+        winner_value = get_winner_value(winner_type)
+        try:
+            if (winner_type == WinnerType.Rock) \
+                or (winner_type == WinnerType.Scissors) \
+                or (winner_type == WinnerType.Paper):
+                for player in self.players:
+                    if player in self.results:
+                        if winner_value == get_finger_value(self.results[player]):
+                            if ('win' in self.scores[player]):
+                                self.scores[player]['win'] += 1
+                            else:
+                                self.scores[player]['win'] = 1
+                        else:
+                            if ('lose' in self.scores[player]):
+                                self.scores[player]['lose'] += 1
+                            else:
+                                self.scores[player]['lose'] = 1
+            else:
+                if winner_type == WinnerType.Deuce1 or winner_type == WinnerType.Deuce3:
+                    for player in self.players:
+                        if player in self.results:
+                            if ('deuce' in self.scores[player]):
+                                self.scores[player]['deuce'] += 1
+                            else:
+                                self.scores[player]['deuce'] = 1
+                else:
+                    for player in self.players:
+                        if player in self.results:                    
+                            if ('error' in self.scores[player]):
+                                self.scores[player]['error'] += 1
+                            else:
+                                self.scores[player]['error'] = 1
+
+        except Exception as err:
+            display_exception(err)
+
+        console.trace("counter_winlose(): leave.")
+    
+    def display_summary(self):
+        max_wins = math.floor((self.max_stage + 1) / 2)
+        msg_text = '胜负统计：({}盘{}胜)\n\n'.format(self.max_stage, max_wins)
+
+        i = 0
+        for player in self.scores:
+            win = 0
+            lose = 0
+            deuce = 0
+            error = 0            
+            if 'win' in self.scores[player]:
+                win = self.scores[player]['win']
+            if 'lose' in self.scores[player]:
+                lose = self.scores[player]['lose']
+            if 'deuce' in self.scores[player]:
+                deuce = self.scores[player]['deuce']
+            if 'error' in self.scores[player]:
+                error = self.scores[player]['error']
+            win_rate = math.floor((win * 1000.0) / (win + deuce + lose + error)) / 10.0
+            msg_text += '[0{}] [{}]：\n胜：{}，平：{}，负：{}，胜率：{}%\n' \
+                .format(i + 1, player, win, deuce, lose, win_rate)
+            i += 1
+            if i < len(self.scores):
+                msg_text += '\n'
+
+        for friend in self.friends:
+            friend.send(msg_text)        
+
+        self.group.send(msg_text)
+        console.info(msg_text)
+
+    def is_gameover(self):
+        b_gameover = False
+        max_wins = math.floor((self.max_stage + 1) / 2)
+        for player in self.scores:
+            if 'win' in self.scores[player]:
+                if self.scores[player]['win'] >= max_wins:
+                    b_gameover = True
+                    break
+
+        if b_gameover:
+            self.display_summary()
+            self.stop()
+
+        return b_gameover
 
     def start(self):
         global console
@@ -471,7 +563,8 @@ class FingerGuessGame(threading.Thread):
                 # else:
                     # console.trace('[Error]: is a invalid player.')
             else:
-                self.send_group_msg('错误：\n游戏没有开始！')
+                # self.send_group_msg('错误：\n游戏没有开始！')
+                console.info('错误：\n游戏没有开始！')
         except Exception as err:
             display_exception(err)
         console.trace('FingerGuessGame::play(): leave.')
@@ -553,6 +646,10 @@ class FingerGuessGame(threading.Thread):
             else:
                 winner_type = WinnerType.Error
                 self.send_msg(winner_type, '错误：\n出拳类型超过 3 种！')
+            
+            self.counter_winlose(winner_type)
+            self.is_gameover()
+
         except Exception as err:
             display_exception(err)
 
@@ -742,15 +839,16 @@ def play_finger_guess_game(name, action):
 
     try:
         if fingerGuessGame != None:
-            action = action.strip()
-            action = action.strip('　')
-            console.trace("play_finger_guess_game(): action = " + action)
-            if action == '石头' or action == '[拳头]':
-                fingerGuessGame.play(name, FingerType.Rock)
-            elif action == '剪刀' or action == '[胜利]':
-                fingerGuessGame.play(name, FingerType.Scissors)
-            elif action == '布' or action == '[OK]':
-                fingerGuessGame.play(name, FingerType.Paper)
+            if fingerGuessGame.is_playing():
+                action = action.strip()
+                action = action.strip('　')
+                console.trace("play_finger_guess_game(): action = " + action)
+                if action == '石头' or action == '[拳头]':
+                    fingerGuessGame.play(name, FingerType.Rock)
+                elif action == '剪刀' or action == '[胜利]':
+                    fingerGuessGame.play(name, FingerType.Scissors)
+                elif action == '布' or action == '[OK]':
+                    fingerGuessGame.play(name, FingerType.Paper)
     except Exception as err:
         display_exception(err)
 
