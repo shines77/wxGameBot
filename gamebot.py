@@ -251,7 +251,7 @@ def get_finger_name(finger_type):
         else:
             return '[疑问] (未知)'
     except Exception as err:
-        display_exception(err)            
+        display_exception(err)
 
 class FingerGuessGame(threading.Thread):
     def __init__(self, group, friends, players, stop_event = None):
@@ -446,7 +446,7 @@ class FingerGuessGame(threading.Thread):
                                 self.scores[player]['deuce'] = 1
                 else:
                     for player in self.players:
-                        if player in self.results:                    
+                        if player in self.results:
                             if ('error' in self.scores[player]):
                                 self.scores[player]['error'] += 1
                             else:
@@ -456,7 +456,7 @@ class FingerGuessGame(threading.Thread):
             display_exception(err)
 
         console.trace("counter_winlose(): leave.")
-    
+
     def display_summary(self):
         max_wins = math.floor((self.max_stage + 1) / 2)
         msg_text = '胜负统计：({}盘{}胜)\n\n'.format(self.max_stage, max_wins)
@@ -466,7 +466,7 @@ class FingerGuessGame(threading.Thread):
             win = 0
             lose = 0
             deuce = 0
-            error = 0            
+            error = 0
             if 'win' in self.scores[player]:
                 win = self.scores[player]['win']
             if 'lose' in self.scores[player]:
@@ -483,7 +483,7 @@ class FingerGuessGame(threading.Thread):
                 msg_text += '\n'
 
         for friend in self.friends:
-            friend.send(msg_text)        
+            friend.send(msg_text)
 
         self.group.send(msg_text)
         console.info(msg_text)
@@ -646,7 +646,7 @@ class FingerGuessGame(threading.Thread):
             else:
                 winner_type = WinnerType.Error
                 self.send_msg(winner_type, '错误：\n出拳类型超过 3 种！')
-            
+
             self.counter_winlose(winner_type)
             self.is_gameover()
 
