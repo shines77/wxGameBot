@@ -37,6 +37,13 @@ $ pip install -U wxpy
 $ pip install -U wxpy -i "https://pypi.doubanio.com/simple/"
 ```
 
+### 升级 wxpy, itchat 库
+
+```
+$ pip install wxpy --upgrade
+$ pip install itchat --upgrade
+```
+
 # English
 
 `wxGameBot`: A Wechat bot about `PokerGuess` game, developed with `python`.
