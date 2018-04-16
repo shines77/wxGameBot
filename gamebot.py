@@ -7,6 +7,7 @@
 #     一个简单有趣的微信聊天机器人
 #     https://zhujia.info/2017/06/26/MakeAWechatBot/
 #
+
 # 导入模块
 from wxpy import *
 from enum import unique, Enum, IntEnum
@@ -221,6 +222,7 @@ def get_winner_value(winner_type):
 
 # '👊', '✌', '👋', '✋'
 def get_finger_emote(finger_type):
+    global console
     if finger_type == FingerType.Rock:
         return '[拳头]'
     elif finger_type == FingerType.Scissors:
@@ -241,6 +243,7 @@ def get_finger_short_name(finger_type):
         return '未知'
 
 def get_finger_name(finger_type):
+    global console
     try:
         if finger_type == FingerType.Rock:
             return '[拳头] (石头)'
@@ -768,9 +771,9 @@ def handle_group_message(msg):
             return
 
         if msg.text == '发言排名' or msg.text == '发言排行榜':
-            if not stat[group.name]:
+            if not group.name in stat:
                 return
-            msg_text = ""
+            msg_text = ''
             index = 1
             count = stat[group.name]['count']
             for name in sorted(count, key=lambda x: count[x], reverse=True):
@@ -781,9 +784,9 @@ def handle_group_message(msg):
                 msg_text = msg.text + '：\n' + msg_text
                 group.send(msg_text)
         elif msg.text == '起床排名' or msg.text == '起床排行榜':
-            if not stat[group.name]:
+            if not group.name in stat:
                 return
-            msg_text = ""
+            msg_text = ''
             index = 1
             for rank in stat[group.name]['rank']:
                 # print('{}: {} {}'.format(index, rank['name'], rank['time']))
@@ -933,7 +936,7 @@ def auto_accept_friends(msg):
     # 接受好友请求
     new_friend = msg.card.accept()
     # 向新的好友发送消息
-    new_friend.send('哈哈，我自动接受了你的好友请求。[我是机器人]')
+    new_friend.send('哈哈，我自动接受了你的好友请求。[微信机器人]')
 
 def stop():
     global console
@@ -989,7 +992,7 @@ class ScheduleThread(threading.Thread):
             elif cur_time == '09:00':
                 for group in bot.groups():
                     console.info(group.name)
-                    if not stat[group.name]:
+                    if not group.name in stat:
                         continue
                     msg_text = ''
                     index = 1
@@ -1003,7 +1006,7 @@ class ScheduleThread(threading.Thread):
             elif cur_time == '23:00':
                 for group in bot.groups():
                     console.info(group.name)
-                    if not stat[group.name]:
+                    if not group.name in stat:
                         continue
                     msg_text = ''
                     index = 1
