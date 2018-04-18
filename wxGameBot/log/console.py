@@ -2,7 +2,6 @@
 # coding: utf-8
 
 from enum import unique, Enum, IntEnum
-import str
 
 @unique
 class LogType(IntEnum):

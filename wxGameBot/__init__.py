@@ -4,6 +4,8 @@
 import logging
 import sys
 
+from .main.bot import Bot
+
 __title__ = 'wxGameBot'
 __version__ = '0.1.0.0'
 __author__ = 'shines77'
