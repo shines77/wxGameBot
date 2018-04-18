@@ -1,2 +1,2 @@
 
-from .console import LogType, Console
+from .console import console, Logger, LogLevel

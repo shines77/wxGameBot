@@ -3,8 +3,8 @@
 from __future__ import unicode_literals
 
 import inspect
-from ..log.console import Console, LogType
-from ..utils.globalvar import GlobalVar
+from ..log.console import console, Logger, LogLevel
+from ..utils.globalvar import globalvar
 
 from wxGameBot.compatible import PY2
 

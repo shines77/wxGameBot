@@ -11,7 +11,7 @@ import time
 from pprint import pformat
 from threading import Thread
 
-from ..utils.globalvar import GlobalVar
+from ..utils.globalvar import globalvar
 
 try:
     import queue
@@ -43,7 +43,6 @@ class Bot(object):
         self.start()
 
     def start(self):
-        globalvar = GlobalVar()
         value = globalvar.get('test')
         # print("value = " + str(value))
         return

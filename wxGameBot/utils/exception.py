@@ -1,14 +1,13 @@
 
 import sys, math
 import traceback
-from ..log.console import Console
-from ..utils.globalvar import GlobalVar
+from ..log.console import console, Logger, LogLevel
+from ..utils.globalvar import globalvar
 
-globalvar = GlobalVar()
-console = globalvar.get("console")
+logger = globalvar.get("logger")
 
 def display_exception(err):
-    global console
+    global logger
     console.warn('=============================================================')
     # console.warn('str(Exception):        ', str(Exception))
     # console.warn('str(err):              ', str(err))

@@ -26,31 +26,42 @@ See: https://www.jianshu.com/p/6cee728f3490
 
 """
 
-class GlobalVar(object):
+class globalvar(object):
     def __init__(self):
         global _inited
+        global _dict        
+        # print("globalvar::__init__()")
+        globalvar.init()
+
+    @staticmethod
+    def init():
+        global _inited
         global _dict
-        # print("GlobalVar::__init__()")
+        # print("globalvar::init()")
         if not _inited:
             _dict = {}
             _inited = True
 
-    def inited(self):
+    @staticmethod
+    def inited():
         global _inited
         return _inited
 
-    def clear(self):
+    @staticmethod
+    def clear():
         global _dict
         _dict = {}
 
-    def find(self, key):
+    @staticmethod
+    def find(key):
         global _dict
         if key in _dict:
             return True
         else:
             return False
 
-    def get(self, key, defValue=None):
+    @staticmethod
+    def get(key, defValue=None):
         global _dict
         try:
             # print("GlobalVar::get(): key = " + str(key))
@@ -66,7 +77,8 @@ class GlobalVar(object):
             logging.error(err)
             raise err
 
-    def get_vars(self, *keys):
+    @staticmethod
+    def get_vars(*keys):
         global _dict
         try:
             if (len(keys) == 1) and (keys[0] == 'all'):
@@ -84,7 +96,8 @@ class GlobalVar(object):
             logging.error(err)
             raise err
 
-    def set(self, key, value):
+    @staticmethod
+    def set(key, value):
         global _dict
         try:
             # print("GlobalVar::set(): key = " + str(key) + ", value = " + str(value))
@@ -97,7 +110,8 @@ class GlobalVar(object):
             logging.error(err)
             raise err
 
-    def set_vars(self, **kv_pairs):
+    @staticmethod
+    def set_vars(**kv_pairs):
         global _dict
         try:
             for key, value in kv_pairs.items():
@@ -108,7 +122,8 @@ class GlobalVar(object):
             logging.error(err)
             raise err
 
-    def delete(self, key):
+    @staticmethod
+    def delete(key):
         global _dict
         try:
             del _dict[key]

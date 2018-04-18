@@ -2,23 +2,27 @@
 # coding: utf-8
 
 from .main.shell import shell_entry
-from .log.console import Console, LogType
-from .utils.globalvar import GlobalVar
+from .log.console import console, Logger, LogLevel
+from .utils.globalvar import globalvar
 
-def console_main():
-    console = Console(LogType.WARNING)
-    globalvar = GlobalVar()
-    globalvar.set('console', console)
+def main():
+    console.init(LogLevel.WARNING)
+    globalvar.init()
+
+    logger = Logger(LogLevel.WARNING)
+    globalvar.set('logger', logger)
 
     # print("globalvar.inited() = " + str(globalvar.inited()))
 
-    # globalvar.set('test', '123')
+    globalvar.set('test', '123')
 
-    # value = globalvar.get('test')
-    # print("value = " + str(value))
+    value = globalvar.get('test')
+    print("value = " + str(value))
+
+    console.log("console_main()")
 
 def console_entry():
-    console_main()
+    main()
     shell_entry()
 
 if __name__ == '__main__':
