@@ -17,7 +17,7 @@ class LogType(IntEnum):
     CRITICAL = 9
     ALL = 10
 
-class Console:
+class Console(object):
     def __init__(self, level = LogType.WARNING):
         self.level = level
 

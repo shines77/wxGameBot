@@ -2,6 +2,8 @@
 from __future__ import unicode_literals
 
 import inspect
+from ..log.console import Console, LogType
+from .globalvar import GlobalVar
 
 from wxGameBot.compatible import PY2
 
@@ -109,6 +111,18 @@ def parse_args():
 
     return ( ap.parse_args(), ap )
 
+def shell_main():
+    console = Console(LogType.WARNING)
+    globalvar = GlobalVar()
+    globalvar.set_var('console', console)
+
+    # print("globalvar.is_inited() = " + str(globalvar.is_inited()))
+
+    # globalvar.set_var('test', '123')
+
+    # value = globalvar.get_var('test')
+    # print("value = " + str(value))
+
 def shell_entry():
     import re
 
@@ -127,6 +141,8 @@ def shell_entry():
                 return logging.INFO
 
         logging.basicConfig(level=get_logging_level())
+
+        shell_main()
 
         try:
             bots = dict()

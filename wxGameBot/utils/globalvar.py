@@ -7,6 +7,7 @@ import traceback
 _inited = False
 _dict = {}
 
+"""
 try:
     # Python 2.7+
     from logging import NullHandler
@@ -16,6 +17,7 @@ except ImportError:
             pass
 
 logging.getLogger(__name__).addHandler(NullHandler())
+"""
 
 """
 
@@ -24,30 +26,40 @@ See: https://www.jianshu.com/p/6cee728f3490
 
 """
 
-class GlobalVar():
+class GlobalVar(object):
     def __init__(self):
         global _inited
         global _dict
+        # print("GlobalVar::__init__()")
         if not _inited:
             _dict = {}
             _inited = True
+            # print("GlobalVar::__init__(): _inited = True")
 
     def is_inited(self):
         global _inited
         return _inited
 
+    def find(self, key):
+        global _dict
+        if key in _dict:
+            return True
+        else:
+            return False
+
     def get_var(self, key, defValue=None):
         global _dict
         try:
+            # print("GlobalVar::get_var(): key = " + str(key))
             if key in _dict:
                 return _dict[key]
             else:
                 return 'Null_'
         except KeyError:
-            print("GlobalVar::get_var(): KeyError")
+            # print("GlobalVar::get_var(): KeyError")
             return defValue
         except BaseException as err:
-            print("GlobalVar::get_var(): BaseException")
+            # print("GlobalVar::get_var(): BaseException")
             logging.error(err)
             raise err
 
@@ -71,17 +83,21 @@ class GlobalVar():
 
             return dict
         except BaseException as err:
+            # print("GlobalVar::get_vars(): BaseException")
             logging.error(err)
             raise err
+            # return None
 
     def set_var(self, key, value):
         global _dict
         try:
+            # print("GlobalVar::set_var(): key = " + str(key) + ", value = " + str(value))
             if isinstance(value, dict):
                 value = json.dumps(value)
             _dict[key] = value
-            logging.info("GlobalVar::set_var(): key = " + str(key) + ", value = " + str(value))
+            logging.debug("GlobalVar::set_var(): key = " + str(key) + ", value = " + str(value))
         except BaseException as err:
+            # print("GlobalVar::set_var(): BaseException")
             logging.error(err)
             raise err
 
@@ -92,6 +108,7 @@ class GlobalVar():
                 _dict[key] = value
                 logging.debug("GlobalVar::set_vars(): key = " + str(key) + ", value = " + str(value))
         except BaseException as err:
+            # print("GlobalVar::set_vars(): BaseException")
             logging.error(err)
             raise err
 
@@ -99,7 +116,8 @@ class GlobalVar():
         global _dict
         try:
             del _dict[key]
-            return _dict
+            return True
         except KeyError:
+            # print("GlobalVar::delete_var(): KeyError")
             logging.error("GlobalVar::delete_var(): key = " + str(key) + ", Error: key 不存在!")
-            return 'Null_'
+            return False
