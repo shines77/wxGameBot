@@ -1,3 +1,3 @@
-@rem wxpy bot -c -s python
-python gamebot.py
+@rem wxGameBot bot -c -s python
+python .\test\gamebot.py
 pause

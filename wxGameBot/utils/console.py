@@ -114,13 +114,13 @@ def parse_args():
 def shell_main():
     console = Console(LogType.WARNING)
     globalvar = GlobalVar()
-    globalvar.set_var('console', console)
+    globalvar.set('console', console)
 
-    # print("globalvar.is_inited() = " + str(globalvar.is_inited()))
+    # print("globalvar.inited() = " + str(globalvar.inited()))
 
-    # globalvar.set_var('test', '123')
+    # globalvar.set('test', '123')
 
-    # value = globalvar.get_var('test')
+    # value = globalvar.get('test')
     # print("value = " + str(value))
 
 def shell_entry():

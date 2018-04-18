@@ -1,3 +1,4 @@
 #!/bin/bash
-./python wxGameBot.py
 
+# wxGameBot bot -c -s python
+python ./test/wxGameBot.py

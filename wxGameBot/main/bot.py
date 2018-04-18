@@ -44,6 +44,6 @@ class Bot(object):
 
     def start(self):
         globalvar = GlobalVar()
-        value = globalvar.get_var('test')
+        value = globalvar.get('test')
         # print("value = " + str(value))
         return

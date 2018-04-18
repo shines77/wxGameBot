@@ -1,15 +1,24 @@
 #!/usr/bin/python
 # coding: utf-8
 
+from wxpy import *
 from enum import unique, Enum, IntEnum
 import threading, time, json, re
+import math
 import traceback
 
 from ..utils.globalvar import GlobalVar
 from ..utils.exception import display_exception
 
 globalvar = GlobalVar()
-console = globalvar.get_var("console")
+console = globalvar.get("console")
+
+current_game = 0
+fingerGuessGame = None
+finger_game_time = ''
+finger_stop_event = None
+
+bot = None
 
 @unique
 class FingerType(IntEnum):
@@ -17,6 +26,18 @@ class FingerType(IntEnum):
     Rock = 0
     Scissors = 1
     Paper = 2
+
+@unique
+class WinnerType(IntEnum):
+    Unknown = -1
+    Rock = 0
+    Scissors = 1
+    Paper = 2
+    Deuce1 = 3
+    Deuce3 = 4
+    Error0 = 5
+    Error2 = 6
+    Error = 7    
 
 def get_finger_value(finger_type):
     if finger_type == FingerType.Rock:
@@ -46,7 +67,7 @@ def get_winner_value(winner_type):
     elif winner_type == WinnerType.Error:
         return 7
     else:
-        return -1
+        return -1        
 
 # '👊', '✌', '👋', '✋'
 def get_finger_emote(finger_type):
@@ -85,19 +106,6 @@ def get_finger_name(finger_type):
         display_exception(err)
 
 class FingerGuessGame(threading.Thread):
-
-    @unique
-    class WinnerType(IntEnum):
-        Unknown = -1
-        Rock = 0
-        Scissors = 1
-        Paper = 2
-        Deuce1 = 3
-        Deuce3 = 4
-        Error0 = 5
-        Error2 = 6
-        Error = 7
-
     def __init__(self, group, friends, players, stop_event = None):
         super(FingerGuessGame, self).__init__()
         self.group = group
@@ -514,6 +522,13 @@ class FingerGuessGame(threading.Thread):
             cur_time = time.time()
             if (cur_time - start_time) > 60 * 1000:
                 start_time = time.time()
+
+def send_group_msg(group, msg_text):
+    global console
+    if group != None:
+        group.send(msg_text)
+    msg_text = msg_text.replace('\n', '')
+    console.info(msg_text)
 
 def stop_finger_guess_game():
     global current_game

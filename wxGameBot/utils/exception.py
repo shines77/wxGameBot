@@ -5,7 +5,7 @@ from ..log.console import Console
 from ..utils.globalvar import GlobalVar
 
 globalvar = GlobalVar()
-console = globalvar.get_var("console")
+console = globalvar.get("console")
 
 def display_exception(err):
     global console

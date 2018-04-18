@@ -34,11 +34,14 @@ class GlobalVar(object):
         if not _inited:
             _dict = {}
             _inited = True
-            # print("GlobalVar::__init__(): _inited = True")
 
-    def is_inited(self):
+    def inited(self):
         global _inited
         return _inited
+
+    def clear(self):
+        global _dict
+        _dict = {}
 
     def find(self, key):
         global _dict
@@ -47,57 +50,50 @@ class GlobalVar(object):
         else:
             return False
 
-    def get_var(self, key, defValue=None):
+    def get(self, key, defValue=None):
         global _dict
         try:
-            # print("GlobalVar::get_var(): key = " + str(key))
+            # print("GlobalVar::get(): key = " + str(key))
             if key in _dict:
                 return _dict[key]
             else:
                 return 'Null_'
         except KeyError:
-            # print("GlobalVar::get_var(): KeyError")
+            # print("GlobalVar::get(): KeyError")
             return defValue
         except BaseException as err:
-            # print("GlobalVar::get_var(): BaseException")
+            # print("GlobalVar::get(): BaseException")
             logging.error(err)
             raise err
 
     def get_vars(self, *keys):
         global _dict
         try:
-            dict = {}
-            if len(keys) == 1:
-                if keys[0] == 'all':
-                    dict = _dict
-                else:
-                    for key in keys:
-                        value = _dict[key]
-                        dict[key] = value
-                        logging.debug("GlobalVar::get_vars(): key = " + str(key) + ", value = " + str(value))
+            if (len(keys) == 1) and (keys[0] == 'all'):
+                dict = _dict
+                return dict
             else:
+                dict = {}
                 for key in keys:
                     value = _dict[key]
                     dict[key] = value
                     logging.debug("GlobalVar::get_vars(): key = " + str(key) + ", value = " + str(value))
-
-            return dict
+                return dict
         except BaseException as err:
             # print("GlobalVar::get_vars(): BaseException")
             logging.error(err)
             raise err
-            # return None
 
-    def set_var(self, key, value):
+    def set(self, key, value):
         global _dict
         try:
-            # print("GlobalVar::set_var(): key = " + str(key) + ", value = " + str(value))
+            # print("GlobalVar::set(): key = " + str(key) + ", value = " + str(value))
             if isinstance(value, dict):
                 value = json.dumps(value)
             _dict[key] = value
             logging.debug("GlobalVar::set_var(): key = " + str(key) + ", value = " + str(value))
         except BaseException as err:
-            # print("GlobalVar::set_var(): BaseException")
+            # print("GlobalVar::set(): BaseException")
             logging.error(err)
             raise err
 
@@ -112,12 +108,12 @@ class GlobalVar(object):
             logging.error(err)
             raise err
 
-    def delete_var(self, key):
+    def delete(self, key):
         global _dict
         try:
             del _dict[key]
             return True
         except KeyError:
             # print("GlobalVar::delete_var(): KeyError")
-            logging.error("GlobalVar::delete_var(): key = " + str(key) + ", Error: key 不存在!")
+            logging.error("GlobalVar::delete(): key = " + str(key) + ", Error: key 不存在!")
             return False
