@@ -108,3 +108,8 @@ stat.json
 
 # vscode folder
 /.vscode
+
+# Other files
+.DS_Store
+QR.jpg
+*.swp
