@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # coding: utf-8
 
-from .utils import shell_entry
+from .utils.console import shell_entry
 from .log.console import Console, LogType
 from .utils.globalvar import GlobalVar
 

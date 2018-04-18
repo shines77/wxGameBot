@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # coding: utf-8
 # from __future__ import unicode_literals
 
@@ -15,32 +16,30 @@ with codecs.open('README.md', encoding='utf-8') as fp:
 setup(
     name='wxGameBot',
     version=version,
-    packages=find_packages(),
-    include_package_data=True,
+
+    """
     entry_points={
         'console_scripts': [
             'wxGameBot = wxGameBot.utils:shell_entry'
         ]
     },
-    install_requires=[
-        'wxpy==0.3.9.8',
-        'requests',
-        'future',
-    ],
-    tests_require=[
-        'pytest',
-    ],
-    url='https://github.com/shines77/wxGameBot',
-    license='MIT',
+    """
+
     author='shines77',
     author_email='gz_shines@msn.com',
+    url='https://github.com/shines77/wxGameBot',
+    license='MIT',
+
     description='微信游戏机器人',
     long_description=readme,
+
     keywords=[
         '微信',
         'WeChat',
+        'GameBot',
         '游戏机器人'
     ],
+
     classifiers=[
         'Development Status :: 4 - Beta',
         'License :: OSI Approved :: MIT License',
@@ -53,5 +52,23 @@ setup(
         'Operating System :: OS Independent',
         'Topic :: Communications :: Chat',
         'Topic :: Utilities',
-    ]
+    ],
+
+    # You can just specify the packages manually here if your project is
+    # simple. Or you can use find_packages().
+    packages=find_packages(),
+
+    include_package_data=True,
+
+    install_requires=[
+        'wxpy==0.3.9.8',
+        'requests',
+        'future',
+    ],
+    tests_require=[
+        'pytest',
+    ],
+
+    # List additional groups of dependencies here
+    extras_require={},
 )
