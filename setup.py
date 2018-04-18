@@ -17,14 +17,6 @@ setup(
     name='wxGameBot',
     version=version,
 
-    """
-    entry_points={
-        'console_scripts': [
-            'wxGameBot = wxGameBot.utils:shell_entry'
-        ]
-    },
-    """
-
     author='shines77',
     author_email='gz_shines@msn.com',
     url='https://github.com/shines77/wxGameBot',
@@ -39,6 +31,12 @@ setup(
         'GameBot',
         '游戏机器人'
     ],
+
+    entry_points={
+        'console_scripts': [
+            'wxGameBot = wxGameBot:console_entry'
+        ]
+    },
 
     classifiers=[
         'Development Status :: 4 - Beta',
@@ -65,6 +63,7 @@ setup(
         'requests',
         'future',
     ],
+
     tests_require=[
         'pytest',
     ],

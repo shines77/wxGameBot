@@ -5,6 +5,7 @@ import logging
 import sys
 
 from .main.bot import Bot
+from .__main__ import console_entry
 
 __title__ = 'wxGameBot'
 __version__ = '0.1.0.0'

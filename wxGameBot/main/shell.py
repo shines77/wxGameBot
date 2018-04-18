@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 
 import inspect
 from ..log.console import Console, LogType
-from .globalvar import GlobalVar
+from ..utils.globalvar import GlobalVar
 
 from wxGameBot.compatible import PY2
 
@@ -113,16 +113,8 @@ def parse_args():
     return ( ap.parse_args(), ap )
 
 def shell_main():
-    console = Console(LogType.WARNING)
-    globalvar = GlobalVar()
-    globalvar.set('console', console)
-
-    # print("globalvar.inited() = " + str(globalvar.inited()))
-
-    # globalvar.set('test', '123')
-
-    # value = globalvar.get('test')
-    # print("value = " + str(value))
+    # TODO: This is console:main entry point
+    return
 
 def shell_entry():
     import re
@@ -143,6 +135,7 @@ def shell_entry():
 
         logging.basicConfig(level=get_logging_level())
 
+        # User custom main entry
         shell_main()
 
         try:
