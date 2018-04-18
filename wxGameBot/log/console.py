@@ -20,6 +20,36 @@ class LogLevel(IntEnum):
 _inited = False
 _loglevel = LogLevel.DEFAULT
 
+_levelToName = {
+    LogLevel.OFF: 'OFF',
+    LogLevel.DEFAULT: 'DEFAULT',
+    LogLevel.INFO: 'INFO',
+    LogLevel.WARNING: 'WARNING',
+    LogLevel.VERBO: 'VERBO',
+    LogLevel.TRACE: 'TRACE',
+    LogLevel.DEBUG: 'DEBUG',
+    LogLevel.ERROR: 'ERROR',
+    LogLevel.FATAL: 'FATAL',
+    LogLevel.CRITICAL: 'CRITICAL',    
+    LogLevel.ALL: 'ALL'
+}
+
+_nameToLevel = {
+    'OFF': LogLevel.OFF,
+    'DEFAULT': LogLevel.DEFAULT,
+    'INFO': LogLevel.INFO,
+    'WARN': LogLevel.WARNING,
+    'WARNING': LogLevel.WARNING,
+    'VERBO': LogLevel.VERBO,
+    'TRACE': LogLevel.TRACE,
+    'DEBUG': LogLevel.DEBUG,
+    'ERROR': LogLevel.ERROR,
+    'FATAL': LogLevel.FATAL,
+    'CRITICAL': LogLevel.CRITICAL,    
+    'ALL': LogLevel.ALL,
+    'NOTSET': LogLevel.DEFAULT
+}
+
 def join_text(log_type, *args):
     text = log_type
     i = 0
@@ -32,14 +62,14 @@ def join_text(log_type, *args):
     return text
 
 class console(object):
-    def __init__(self, level = LogLevel.WARNING):
+    def __init__(self, level = LogLevel.INFO):
         global _inited
         global _loglevel
         print("console::__init__()")
         console.init(level)
 
     @staticmethod
-    def init(level = LogLevel.WARNING):
+    def init(level = LogLevel.INFO):
         global _inited
         if not _inited:
             console.set_level(level)
@@ -56,9 +86,31 @@ class console(object):
         return _loglevel
 
     @staticmethod
-    def set_level(level = LogLevel.WARNING):
+    def get_level_name():
+        global _loglevel
+        global _levelToName
+        if _loglevel in _levelToName:
+            return _levelToName[_loglevel]
+        else:
+            return "INFO"
+
+    @staticmethod
+    def set_level(level = LogLevel.INFO):
         global _loglevel
         _loglevel = level
+
+    @staticmethod
+    def set_level_name(level_name = 'INFO'):
+        global _loglevel
+        global _nameToLevel
+        # print("console::set_level_name(): level_name = " + str(level_name))
+        level = LogLevel.OFF
+        if level_name in _nameToLevel:
+            level = _nameToLevel[level_name]
+        else:
+            level = LogLevel.INFO
+        _loglevel = level
+        return level
 
     @staticmethod
     def print(*args):
@@ -103,7 +155,7 @@ class console(object):
             print(text)
 
     @staticmethod
-    def _debug(*args):
+    def debug(*args):
         global _loglevel
         if _loglevel.value >= LogLevel.DEBUG.value:
             text = join_text("[Debug] ", args)
@@ -138,13 +190,13 @@ class console(object):
             print(text)
 
 class Logger(object):
-    def __init__(self, level = LogLevel.WARNING):
+    def __init__(self, level = LogLevel.INFO):
         self.level = level
 
     def get_level(self):
         return self.level
 
-    def set_level(self, level = LogLevel.WARNING):
+    def set_level(self, level = LogLevel.INFO):
         self.level = level
 
     def print(self, *args):

@@ -4,7 +4,7 @@
 import logging
 import sys
 
-from .main.bot import Bot
+from .main.gamebot import GameBot
 from .__main__ import console_entry
 
 __title__ = 'wxGameBot'

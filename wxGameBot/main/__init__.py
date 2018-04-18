@@ -1,3 +1,3 @@
 
-from .bot import Bot
+from .gamebot import GameBot
 from .shell import shell_entry

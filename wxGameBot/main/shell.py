@@ -135,6 +135,10 @@ def shell_entry():
 
         logging.basicConfig(level=get_logging_level())
 
+        logging_level = args.logging_level.upper()
+        # print("shell.py::shell_entry(): logging_level = " + str(logging_level))
+        console.set_level_name(logging_level)
+
         # User custom main entry
         shell_main()
 
@@ -144,7 +148,7 @@ def shell_entry():
                 if not re.match(r'\w+$', name):
                     continue
                 cache_path = 'wxGameBot_{}.pkl'.format(name) if args.cache else None
-                bots[name] = wxGameBot.Bot(cache_path=cache_path, console_qr=args.console_qr)
+                bots[name] = wxGameBot.GameBot(cache_path=cache_path, console_qr=args.console_qr)
         except KeyboardInterrupt:
             return
 

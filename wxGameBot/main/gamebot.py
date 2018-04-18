@@ -19,7 +19,7 @@ except ImportError:
     # noinspection PyUnresolvedReferences,PyPep8Naming
     import Queue as queue
 
-class Bot(object):
+class GameBot(object):
 
     """
     :param cache_path:
